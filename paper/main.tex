@@ -1,158 +1,335 @@
-\documentclass{article}
-\usepackage{arxiv}
+\documentclass[a4paper, 12pt]{article}
 
-\usepackage[utf8]{inputenc}
-\usepackage[english, russian]{babel}
-\usepackage[T1]{fontenc}
-\usepackage{url}
-\usepackage{booktabs}
-\usepackage{amsfonts}
-\usepackage{nicefrac}
-\usepackage{microtype}
-\usepackage{lipsum}
-\usepackage{graphicx}
-\usepackage{natbib}
-\usepackage{doi}
+\input{preamble.tex}
+\renewcommand{\abstractname}{Аннотация}
 
+\title{Генеративный причинно-следственный подход к анализу данных ИМК}
 
-
-\title{A template for the \emph{arxiv} style}
-
-\author{ David S.~Hippocampus\thanks{Use footnote for providing further
-		information about author (webpage, alternative
-		address)---\emph{not} for acknowledging funding agencies.} \\
-	Department of Computer Science\\
-	Cranberry-Lemon University\\
-	Pittsburgh, PA 15213 \\
-	\texttt{hippo@cs.cranberry-lemon.edu} \\
-	%% examples of more authors
+\author{Владимиров Эдуард \\
+	\texttt{vladimirov.ea@phystech.edu} \\
 	\And
-	Elias D.~Striatum \\
-	Department of Electrical Engineering\\
-	Mount-Sheikh University\\
-	Santa Narimana, Levand \\
-	\texttt{stariate@ee.mount-sheikh.edu} \\
-	%% \AND
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
-	%% \And
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
-	%% \And
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
+	Стрижов Вадим \\
+	\texttt{strijov@phystech.edu}
 }
-\date{}
-
-\renewcommand{\shorttitle}{\textit{arXiv} Template}
-
-%%% Add PDF metadata to help others organize their library
-%%% Once the PDF is generated, you can check the metadata with
-%%% $ pdfinfo template.pdf
-\hypersetup{
-pdftitle={A template for the arxiv style},
-pdfsubject={q-bio.NC, q-bio.QM},
-pdfauthor={David S.~Hippocampus, Elias D.~Striatum},
-pdfkeywords={First keyword, Second keyword, More},
-}
+\date{\today}
 
 \begin{document}
-\maketitle
+	\maketitle
+	
+	\begin{abstract}
+		В данной работе предлагается генеративный причинно-следственный подход к анализу взаимодействия биосигналов, в частности электроэнцефалограммы (ЭЭГ) и инерциальных данных. Главная цель --- определить и количественно оценить причинно-следственные связи между мозговой активностью и движениями, опираясь на три взаимодополняющие методологии: геометрическое представление сигналов на римановых многообразиях, физически-информированные нейронные сети (PINN) для реалистичного моделирования кинематики, и меры информационной теории и алгоритмы причинного анализа. Объединение этих подходов даёт возможность не только выявлять временные и нелинейные зависимости в системе <<мозг--тело>>, но и строить синтетические выборки для валидации гипотез. Предложенный фреймворк повышает точность и интерпретируемость результатов. Его работа проиллюстрирована на датасете игры с теннисом.
 
-\begin{abstract}
-	\lipsum[1]
-\end{abstract}
-
-
-\keywords{First keyword \and Second keyword \and More}
-
-\section{Introduction}
-\lipsum[2]
-\lipsum[3]
-
-\section{Headings: first level}
-\label{sec:headings}
-
-\lipsum[4] See Section \ref{sec:headings}.
-
-\subsection{Headings: second level}
-\lipsum[5]
-\begin{equation}
-	\xi _{ij}(t)=P(x_{t}=i,x_{t+1}=j|y,v,w;\theta)= {\frac {\alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}{\sum _{i=1}^{N} \sum _{j=1}^{N} \alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}}
-\end{equation}
-
-\subsubsection{Headings: third level}
-\lipsum[6]
-
-\paragraph{Paragraph}
-\lipsum[7]
-
-
-
-\section{Examples of citations, figures, tables, references}
-\label{sec:others}
-
-\subsection{Citations}
-Citations use \verb+natbib+. The documentation may be found at
-\begin{center}
-	\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-
-Here is an example usage of the two main commands (\verb+citet+ and \verb+citep+): Some people thought a thing \citep{kour2014real, hadash2018estimate} but other people thought something else \citep{kour2014fast}. Many people have speculated that if we knew exactly why \citet{kour2014fast} thought this\dots
-
-\subsection{Figures}
-\lipsum[10]
-See Figure \ref{fig:fig1}. Here is how you add footnotes. \footnote{Sample of the first footnote.}
-\lipsum[11]
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.5\textwidth]{../figures/log_reg_cs_exp.eps}
-	\caption{Sample figure caption.}
-	\label{fig:fig1}
-\end{figure}
-
-\subsection{Tables}
-See awesome Table~\ref{tab:table}.
-
-The documentation for \verb+booktabs+ (`Publication quality tables in LaTeX') is available from:
-\begin{center}
-	\url{https://www.ctan.org/pkg/booktabs}
-\end{center}
-
-
-\begin{table}
-	\caption{Sample table title}
-	\centering
-	\begin{tabular}{lll}
-		\toprule
-		\multicolumn{2}{c}{Part}                   \\
-		\cmidrule(r){1-2}
-		Name     & Description     & Size ($\mu$m) \\
-		\midrule
-		Dendrite & Input terminal  & $\sim$100     \\
-		Axon     & Output terminal & $\sim$10      \\
-		Soma     & Cell body       & up to $10^6$  \\
-		\bottomrule
-	\end{tabular}
-	\label{tab:table}
-\end{table}
-
-\subsection{Lists}
-\begin{itemize}
-	\item Lorem ipsum dolor sit amet
-	\item consectetur adipiscing elit.
-	\item Aliquam dignissim blandit est, in dictum tortor gravida eget. In ac rutrum magna.
-\end{itemize}
-
-
-\bibliographystyle{unsrtnat}
-\bibliography{references}
-
+	\end{abstract}
+	
+	
+	\keywords{ЭЭГ \and ИИМ \and сходящееся перекрёстное отображение \and взаимная информация \and причинно-следственный вывод} 
+	
+	\section{Введение}
+	
+	В последние годы наблюдается стремительный рост интереса к исследованию взаимодействия между мозговой активностью и двигательными действиями человека. С этой целью широко применяются методы анализа электроэнцефалографических (ЭЭГ) сигналов и инерциальных данных (ИИМ, инерциальный измерительный модуль), поскольку они позволяют регистрировать, соответственно, нейронную активность и механику движений в реальном времени. Выявление причинно-следственных связей между ЭЭГ и ИИМ играет важнейшую роль в области нейробиологии, медицины, спортивной науки и технологий Brain-Computer Interface (BCI). Традиционные подходы к анализу таких данных — например, методы корреляции или линейной регрессии — зачастую оказываются недостаточными для точного описания сложных нелинейных взаимодействий в системе <<мозг--тело>>.
+	
+	Чтобы преодолеть указанные ограничения, в настоящей работе рассматривается \textbf{генеративный причинно-следственный подход} (Generative Causal Inference), сочетающий несколько концептуальных направлений:
+	
+	\begin{itemize}
+		\item \textbf{Моделирование сигналов на многообразиях.}
+		ЭЭГ-данные представляют собой высокоразмерный временной ряд, источник которого ~--- множество независимых (или частично независимых) нейронных процессов. Движения, в свою очередь, могут быть представлены на пространстве кинематических параметров, где измерения акселерометра и гироскопа описывают динамику конечностей. Использование геометрических методов и концепции римановой геометрии (Riemannian geometry) позволяет корректно учитывать внутреннюю структуру и ковариации в данных, избегая упрощающих линейных допущений.
+		
+		\item \textbf{Физически-информированные нейронные сети (PINN).}
+		Для описания динамики движений и сигналов ИИМ всё чаще применяются Physics-Informed Neural Networks. В отличие от стандартного глубокого обучения, PINN встраивает уравнения классической механики (или другой физической модели) прямо в функцию потерь. Это даёт возможность строить более реалистичные (и интерпретируемые) модели движения, которые затем могут использоваться для проверки гипотез о причинно-следственных связях с мозговой активностью.
+		
+		\item \textbf{Причинно-следственный анализ на базе информационных мер.}
+		Использование мер информационной теории, таких как взаимная информация (Mutual Information, MI) и дивергенция Кульбака--Лейблера (Kullback--Leibler divergence, KL), даёт статистически обоснованные способы выявлять и количественно оценивать степень зависимости между сигнальными распределениями. В частности, инструменты вроде Convergent Cross Mapping (CCM) или Probabilistic CCM позволяют проверить, какие каналы ЭЭГ <<вызывают>> изменения ИИМ, или что связь обусловлена иными факторами.
+	\end{itemize}
+	
+	Объединение подходов моделирования с методами причинно-следственного анализа  лежит в основе предлагаемого здесь \textbf{генеративного причинно-следственного вывода}. Это позволяет не только установить факт корреляции или временной зависимости между сигналами, но и даёт возможность:
+	
+	\begin{itemize}
+		\item оценивать устойчивость данных выводов при варьировании параметров модели;
+		\item генерировать синтетические выборки, отражающие ключевые особенности реальных записей ЭЭГ и ИИМ;
+		\item учитывать сложность биологических систем, проявляющуюся в нелинейных и многокомпонентных связях, которые не могут быть адекватно описаны классическими линейными моделями.
+	\end{itemize}
+	
+	Таким образом, целью данной работы является разработка единого методологического фреймворка, который объединяет:
+	\begin{enumerate}
+		\item геометрические и физические представления о природе исследуемых сигналов,
+		\item продвинутые методы генерации и анализа данных,
+		\item алгоритмы выявления причинно-следственных связей.
+	\end{enumerate}
+	
+	В дальнейшем мы продемонстрируем, как такой подход может применяться на практике при анализе когнитивных и моторных данных, а также обсудим преимущества и текущие ограничения.
+	
+	\section{Теоретическая часть}
+	
+	\subsection{Общие обозначения}
+	
+	Рассмотрим два временных ряда: 
+	\[
+	\mathbf{X}(t) \in \mathbb{R}^{N \times d_X}, 
+	\quad
+	\mathbf{Y}(t) \in \mathbb{R}^{N \times d_Y},
+	\quad
+	t = 1,2,\dots,T.
+	\]
+	
+	Пусть $p(\mathbf{X}, \mathbf{Y})$ обозначает совместное распределение этих данных.
+	
+	Наша цель --- проанализировать причинно-следственные связи между $\mathbf{X}$ и $\mathbf{Y}$, то есть понять, существует ли (и насколько выражена) направленная зависимость:
+	\[
+	\mathbf{X} \;\longrightarrow\; \mathbf{Y},
+	\quad
+	\text{или}
+	\quad
+	\mathbf{Y} \;\longrightarrow\; \mathbf{X}.
+	\]
+	
+	\subsection{Независимый анализ компонент (ICA)}
+	
+	При наличии высокоразмерных сигналов $\mathbf{X}(t)$, содержащих множество смешанных источников, часто вводится модель:
+	\[
+	\mathbf{X}(t) = A\,\mathbf{S}(t),
+	\]
+	где $\mathbf{S}(t)\in\mathbb{R}^{d_S}$ --- вектор независимых компонент, а $A$ --- постоянная матрица смешения. Предполагается, что координаты $\mathbf{S}(t)$ статистически независимы:
+	\[
+	p(\mathbf{S}) \;=\; \prod_{k=1}^{d_S} p\bigl(S_k\bigr).
+	\]
+	Задача независимого анализа компонент сводится к оценке $\widehat{A}^{-1}$ (или непосредственно $A$) так, чтобы 
+	\[
+	\widehat{\mathbf{S}}(t) \;=\; \widehat{A}^{-1}\,\mathbf{X}(t)
+	\]
+	максимизировало независимость компонент. Для измерения независимости используют различные функции (энтропию, взаимную информацию и др.). Итоговые независимые компоненты $\widehat{\mathbf{S}}(t)$ далее могут анализироваться вместо $\mathbf{X}(t)$, что часто упрощает выявление причинно-следственных связей, особенно в ЭЭГ-исследованиях.
+	
+	\subsection{Физически-информированные нейронные сети (PINN)}
+	
+	Сигналы $\mathbf{Y}(t)$ могут удовлетворять законам механики, описываемым уравнениями:
+	\[
+	\frac{d^2 \mathbf{r}(t)}{dt^2} \;=\; \mathbf{f}\!\bigl(\mathbf{r}(t), \dot{\mathbf{r}}(t), \theta\bigr),
+	\]
+	где $\mathbf{r}(t) \in \mathbb{R}^m$ --- координаты (или углы) исследуемого объекта во времени, а $\theta$ --- набор физических параметров (масса, длины звеньев и т.\,п.). При использовании модели PINN мы строим приближающую функцию
+	\[
+	\mathbf{u}(t,\boldsymbol{\Theta}) \;\approx\; \mathbf{r}(t),
+	\]
+	где $\boldsymbol{\Theta}$ --- обучаемые веса нейронной сети. В функцию потерь $\mathcal{L}(\boldsymbol{\Theta})$ помимо ошибки на измеренных данных $\mathbf{Y}(t)$ (которая соответствует ускорению или угловой скорости) добавляют слагаемое, обеспечивающее физическую согласованность:
+	\[
+	\mathcal{L}(\boldsymbol{\Theta})
+	\;=\;
+	\sum_{t}\Bigl\|\ddot{\mathbf{u}}(t,\boldsymbol{\Theta})-\mathbf{f}\!\bigl(\mathbf{u}(t,\boldsymbol{\Theta}),\dot{\mathbf{u}}(t,\boldsymbol{\Theta}),\theta\bigr)\Bigr\|^2
+	\;+\;
+	\sum_{t}\Bigl\|\ddot{\mathbf{u}}(t,\boldsymbol{\Theta})-\mathbf{Y}(t)\Bigr\|^2,
+	\]
+	где первая сумма отвечает за удовлетворение уравнениям движения, а вторая --- за согласие с наблюдениями из IMU.
+	
+	При введении стохастических факторов (например, случайных начальных условий) получается вероятностная модель
+	\[
+	p_{\boldsymbol{\Theta}}(\mathbf{Y}) 
+	\;\approx\;
+	\prod_{t} p_{\boldsymbol{\Theta}}(\mathbf{Y}(t) \,\vert\, \mathbf{u}(t,\boldsymbol{\Theta})),
+	\]
+	позволяющая учесть изменчивость движений при неизменной задаче.
+	
+	\subsection{Метод сходящихся перекрёстных отображений (CCM)}
+	
+	Для проверки гипотезы о том, что $\mathbf{X}(t)$ причинно влияет на $\mathbf{Y}(t)$, используют процедуру Convergent Cross Mapping. Вводится теневое вложение:
+	\[
+	M_{X,t} 
+	\;=\;
+	\bigl(X_t,\;X_{t-\tau},\;\dots,\;X_{t-(E-1)\tau}\bigr),
+	\]
+	где $E$ --- размерность вложения, а $\tau$ --- временной лаг. Аналогично задаётся $M_{Y,t}$. Если вектор $M_{X,t}$ хорошо \emph{реконструирует} $\mathbf{Y}_t$, то есть
+	\[
+	\widehat{\mathbf{Y}}_t 
+	\;=\; 
+	\sum_{i=1}^{k} w_i \,\mathbf{Y}_{n_i},
+	\]
+	где $n_i$ --- индексы ближайших соседей $M_{X,t}$ в пространстве $M_X$, то считается, что есть динамическая причинная связь $\mathbf{X}\to \mathbf{Y}$. Значение 
+	\[
+	\rho_{X\to Y}
+	\;=\;
+	\mathrm{corr}\!\Bigl(\{\widehat{\mathbf{Y}}_t\},\{\mathbf{Y}_t\}\Bigr)
+	\]
+	растёт при увеличении размера библиотеки, если $\mathbf{X}\to \mathbf{Y}$ действительно имеет место.
+	
+	\subsection{Вероятностный метод сходящихся перекрёстных отображений}
+	
+	Вместо единственного предсказания $\widehat{\mathbf{Y}}_t$ можно рассматривать \emph{условное распределение} 
+	\[
+	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr),
+	\]
+	оценённое на выборке размера $L$. По аналогии с CCM, ближайшие соседи используются для построения вероятностной аппроксимации:
+	\[
+	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr)
+	\;=\;
+	\sum_{i\in N_L(t)} \alpha_i \,\delta\bigl(\mathbf{Y}-\mathbf{Y}_{n_i}\bigr),
+	\]
+	где $N_L(t)$ --- множество индексов соседей, а $\alpha_i$ --- веса, зависящие от расстояния в $M_X$. Тогда для оценки причинности рассматривают, например, величину
+	\[
+	I_L\bigl(\mathbf{X}\!\to\!\mathbf{Y}\bigr)
+	\;=\;
+	\sum_{t}
+	D_{\mathrm{KL}}\Bigl(
+	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr) 
+	\;\big\|\;
+	p(\mathbf{Y}_t)
+	\Bigr),
+	\]
+	или аналогичную меру, связанную с \(\mathrm{MI}\) (взаимной информацией). При $L\to\infty$ распределение $p_L(\mathbf{Y}_t|M_{X,t})$ должно сходиться к истинному условному $p(\mathbf{Y}_t|M_{X,t})$, давая более строгую вероятностную трактовку динамических причинных связей.
+	
+	\subsection{Ядерное сглаживание}
+	
+	Для набора $\{M_{X,t}\}_{t=1}^T$ можно ввести эмпирическую плотность с помощью ядерного метода. Пусть $K(\cdot)$ --- некая ядровая функция (напр.\,гауссова):
+	\[
+	\widehat{p}_X(u)
+	\;=\;
+	\frac{1}{T h_X^{m_X}}
+	\sum_{t=1}^T
+	K\!\Bigl(\frac{\|u - M_{X,t}\|}{h_X}\Bigr),
+	\]
+	где $h_X>0$ --- параметр сглаживания, а $m_X=\dim(\mathcal{M}_X)$ --- формальная размерность пространства вложения. Аналогично для $M_{Y,t}$ определяем
+	\[
+	\widehat{p}_Y(v)
+	\;=\;
+	\frac{1}{T h_Y^{m_Y}}
+	\sum_{t=1}^T
+	K\!\Bigl(\frac{\|v - M_{Y,t}\|}{h_Y}\Bigr).
+	\]
+	Таким образом, каждому многообразию $\mathcal{M}_X$ и $\mathcal{M}_Y$ соответствует своя оценка плотности, отражающая эмпирическое распределение вложенных точек.
+	
+	\section{Постановка задачи}
+	
+	Пусть \( \mathbf{X}(t) = \{X_1(t), X_2(t), \ldots, X_{n_x}(t)\} \) и \( \mathbf{Y}(t) = \{Y_1(t), Y_2(t), \ldots, Y_{n_y}(t)\} \) — два набора многомерных временных рядов, наблюдаемых в моменты времени \( t = 1, \ldots, T \). Нас интересует выявление причинных связей между \( \mathbf{X}(t) \) и \( \mathbf{Y}(t) \), т.е. такие пары связей, где переменные из \( \mathbf{X}(t) \) причинно влияют на переменные из \( \mathbf{Y}(t) \), или наоборот.
+	
+	Необходимо определить направленные причинные связи:
+	1. \( X_i(t-\tau) \to Y_j(t) \) для \( i = 1, \ldots, n_x \), \( j = 1, \ldots, n_y \), и лагов \( \tau \geq 0 \),
+	2. \( Y_j(t-\tau) \to X_i(t) \) для \( i = 1, \ldots, n_x \), \( j = 1, \ldots, n_y \), и лагов \( \tau \geq 0 \).
+	
+	
+	Предполагаем, что многомерные временные ряды \( \mathbf{X}(t) \) и \( \mathbf{Y}(t) \) генерируются следующим образом:
+	\[
+	X_i(t) = f_i(\text{Pa}_{X_i}(t), \varepsilon_{X_i}(t)),
+	\]
+	\[
+	Y_j(t) = g_j(\text{Pa}_{Y_j}(t), \varepsilon_{Y_j}(t)),
+	\]
+	где:
+	- \( \text{Pa}_{X_i}(t) \subseteq \{Y_1(t-\tau), \ldots, Y_{n_y}(t-\tau)\} \) — множество родителей переменной \( X_i(t) \) из \( \mathbf{Y} \),
+	- \( \text{Pa}_{Y_j}(t) \subseteq \{X_1(t-\tau), \ldots, X_{n_x}(t-\tau)\} \) — множество родителей переменной \( Y_j(t) \) из \( \mathbf{X} \),
+	- \( f_i \) и \( g_j \) — детерминированные функции, описывающие зависимость,
+	- \( \varepsilon_{X_i}(t) \) и \( \varepsilon_{Y_j}(t) \) — шумовые компоненты.
+	
+	Оптимизационная задача:
+	\[
+	\min_{G_{XY}, G_{YX}} \mathcal{L}(\mathbf{X}, \mathbf{Y} \mid G_{XY}, G_{YX}) + \lambda_1 \mathcal{R}(G_{XY}, G_{YX}) + \lambda_2 \mathcal{T}(G_{XY}, G_{YX}),
+	\]
+	где:
+	- \( G_{XY} \) — граф зависимостей \( X_i \to Y_j \),
+	- \( G_{YX} \) — граф зависимостей \( Y_j \to X_i \),
+	- \( \mathcal{L}(\mathbf{X}, \mathbf{Y} \mid G_{XY}, G_{YX}) \) — правдоподобие наблюдаемых данных с учетом графов \( G_{XY} \) и \( G_{YX} \),
+	- \( \mathcal{R}(G_{XY}, G_{YX}) \) — регуляризатор, штрафующий за сложность графов,
+	- \( \mathcal{T}(G_{XY}, G_{YX}) \) — штраф за избыточную изменчивость графов во времени.
+	 
+	
+	\section{Предлагаемый подход}
+	\begin{algorithm}[h!]
+		\caption{Алгоритм вероятностного выявления влияния $\mathbf{X}\to\mathbf{Y}$ на основе ICA и ядерной оценки плотностей}
+		\label{alg:ICA_KDE_Causal}
+		
+		\textbf{Входные данные:}
+		\begin{itemize}
+			\item Набор исходных наблюдений $\{\mathbf{X}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_X}$ (ЭЭГ).
+			\item Набор исходных наблюдений $\{\mathbf{Y}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_Y}$ (ИИМ).
+			\item Параметры: число независимых компонент $r$ для ICA, размерность вложения $E$ и временной лаг $\tau$, ядровые ширины сглаживания $h_X,\,h_Y$.
+		\end{itemize}
+		
+		\textbf{Выходные данные:}
+		\begin{itemize}
+			\item Временной ряд (или процесс) $\{\gamma(t)\}_{t=1}^T$, где
+			\[
+			\gamma(t) = MI(M_{X, t}, M_{Y, t}) 
+			\;=\; 
+			\mathbb{E}_{M_{X, t}} D_{\mathrm{KL}}\Bigl(
+			\widehat{p}\bigl(M_{Y,t}\,\big\vert\,M_{X,t}\bigr)
+			\;\big\|\;
+			\widehat{p}_{Y}\bigl(M_{Y,t}\bigr)
+			\Bigr),
+			\]
+			измеряющий силу влияния $\mathbf{X}\to\mathbf{Y}$ в момент $t$.
+		\end{itemize}
+		
+		\begin{enumerate}
+			\item \textbf{Независимый анализ компонент (ICA).} 
+			
+			\(\displaystyle
+			\mathbf{X}_{\mathrm{raw}}(t) \;=\; A\,\mathbf{S}(t),
+			\quad
+			\mathbf{S}(t)\in \mathbb{R}^{r}, 
+			\quad
+			A\in\mathbb{R}^{d_X \times r}.
+			\)
+			
+			Вычислить оценки независимых компонент:
+			\[
+			\widehat{\mathbf{S}}(t)
+			\;=\;
+			\widehat{A}^{-1}\,
+			\mathbf{X}_{\mathrm{raw}}(t).
+			\]
+			
+			\item \textbf{Построение временных эмбеддингов для \(\mathbf{X}\) и \(\mathbf{Y}\).}
+			
+			Для каждого $t$ сформировать:
+			\[
+			M_{X,t}
+			\;=\;
+			\bigl(\widehat{\mathbf{S}}(t),\,\widehat{\mathbf{S}}(t-\tau),\,\dots,\widehat{\mathbf{S}}(t-(E-1)\tau)\bigr)
+			\;\;\in\;\mathbb{R}^{rE},
+			\]
+			\[
+			M_{Y,t}
+			\;=\;
+			\mathbf{Y}_{\mathrm{raw}}(t)
+			\;\;\in\;\mathbb{R}^{d_Y E}.
+			\]
+			
+			\item \textbf{Ядерная оценка (KDE) для маргинальных плотностей на эмбеддингах.}
+			
+			Определить оценки плотностей:
+			\[
+			\widehat{p}_X(u)
+			\;=\;
+			\frac{1}{T\,h_X^{m_X}}
+			\;\sum_{t=1}^T 
+			K\!\Bigl(\tfrac{\|u - M_{X,t}\|}{h_X}\Bigr),
+			\quad
+			u \in \mathbb{R}^{m_X},
+			\]
+			\[
+			\widehat{p}_Y(v)
+			\;=\;
+			\frac{1}{T\,h_Y^{m_Y}}
+			\;\sum_{t=1}^T 
+			K\!\Bigl(\tfrac{\|v - M_{Y,t}\|}{h_Y}\Bigr),
+			\quad
+			v \in \mathbb{R}^{m_Y},
+			\]
+			где $m_X = rE,\; m_Y = d_Y,$ а $K(\cdot)$ --- ядровая функция.
+			
+			\item \textbf{Агрегация результатов и формирование временного ряда.}
+			
+			Сформировать последовательность
+			\[
+			\gamma(t)
+			\;=\;
+			\mathbb{E}_{M_{X, t}} D_{\mathrm{KL}}\Bigl(
+			\widehat{p}\bigl(M_{Y,t}\,\vert\,M_{X,t}\bigr)
+			\;\big\|\;
+			\widehat{p}_Y\bigl(M_{Y,t}\bigr)
+			\Bigr),
+			\quad t = 1,\dots,T.
+			\]
+		\end{enumerate}
+		
+	\end{algorithm}
+	
+	\bibliographystyle{unsrtnat}
+	\bibliography{references.bib}
+	
 \end{document}
