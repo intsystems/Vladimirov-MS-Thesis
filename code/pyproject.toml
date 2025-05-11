@@ -1,0 +1,36 @@
+[project]
+name = "gen-ci"
+version = "0.1.0"
+description = "Python environment for experiments with causal inference methods"
+authors = [
+    {name = "Edyarich",email = "ymnik432@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "seaborn (>=0.13.2,<0.14.0)",
+    "gpy (>=1.13.2,<2.0.0)",
+    "scikit-learn (>=1.6.1,<2.0.0)",
+    "pyedm (>=2.2.1,<3.0.0)",
+    "ace-tools (>=0.0,<0.1)",
+    "jupyter (>=1.1.1,<2.0.0)",
+    "ipywidgets (>=8.1.6,<9.0.0)",
+    "pgmpy (>=1.0.0,<2.0.0)",
+    "pyreadr (>=0.5.3,<0.6.0)",
+    "zstandard (>=0.23.0,<0.24.0)",
+    "rpy2 (>=3.5.17,<4.0.0)",
+    "bnlearn (>=0.10.2,<0.11.0)",
+    "tigramite (>=5.2.7.0,<6.0.0.0)",
+    "causal-learn (>=0.1.4.1,<0.2.0.0)",
+    "numba (>=0.61.2,<0.62.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
