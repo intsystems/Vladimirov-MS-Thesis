@@ -166,17 +166,15 @@
 
 %---------------------------------------------------------------------------------------------------------
 \begin{frame}{Различные подходы к поиску связей}
-	\begin{multicols}{2}
-		\begin{figure}
-			\includegraphics[width=\linewidth]{ci-approaches}
-			\caption{Существующие подходы}
-		\end{figure}
-	
-		\begin{figure}
-			\includegraphics[width=\linewidth]{ccm-prob.png}
-			\caption{Предлагаемый подход}
-		\end{figure}
-	\end{multicols}
+%	\begin{figure}
+%		\includegraphics[width=0.6\linewidth]{ci-approaches}
+%		\caption{Существующие подходы}
+%	\end{figure}
+
+	\begin{figure}
+		\includegraphics[width=\linewidth]{ica-ssr-mi}
+		\caption{Предлагаемый подход ПАНКВИ}
+	\end{figure}
 \end{frame}
 
 %--------------------------------------------------------------------------------------------------------
@@ -337,7 +335,7 @@
 	
 	\textbf{Опр.} \textit{Причинно-следственный механизм} ``$X \rightarrow Y$'' это марковское ядро:
 	$
-	\mathbb{T}_{\mathcal{X}}(y|x) : \mathcal{X} \to \mathbb{P}(\mathcal{Y})
+	\kappa(y|x) : \mathcal{X} \to \mathbb{P}(\mathcal{Y})
 	$
 	
 	\vspace{0.5em}
@@ -379,9 +377,9 @@
 
 \begin{frame}{Выносится на защиту}
 	\begin{enumerate}
-		\item Проведено сравнение метод выявления причинно-следственных связей
+		\item Проведено сравнение методов выявления причинно-следственных связей
 		
-		\item Предложен новый способ обнаружения связей, учитывающий высокую размерность данных
+		\item Предложен новый способ обнаружения связей, учитывающий высокую размерность данных и нелинейную связь компонент
 		
 		\item Представлена альтернативная постановка задачи обнаружения связи, которая будет развиваться в дальнейшем
 		
