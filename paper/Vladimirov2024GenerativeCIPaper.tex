@@ -1,332 +1,668 @@
-\documentclass[a4paper, 12pt]{article}
+\documentclass[14pt]{extarticle}
 
-\input{preamble.tex}
-\renewcommand{\abstractname}{Аннотация}
+\input{preamble}
 
-\title{Генеративный причинно-следственный подход к анализу данных ИМК}
-
-\author{Владимиров Эдуард \\
-	\texttt{vladimirov.ea@phystech.edu} \\
-	\And
-	Стрижов Вадим \\
-	\texttt{strijov@phystech.edu}
-}
-\date{\today}
 
 \begin{document}
-	\maketitle
+	\input{title}
+	
+	\newpage
+	\tableofcontents
+	\newpage
+	
+	\begin{center}
+		\Large{\textbf{Аннотация}}
+	\end{center}
 	
 	\begin{abstract}
-		В данной работе предлагается генеративный причинно-следственный подход к анализу взаимодействия биосигналов, в частности электроэнцефалограммы (ЭЭГ) и инерциальных данных. Главная цель --- определить и количественно оценить причинно-следственные связи между мозговой активностью и движениями, опираясь на три взаимодополняющие методологии: геометрическое представление сигналов на римановых многообразиях, физически-информированные нейронные сети (PINN) для реалистичного моделирования кинематики, и меры информационной теории и алгоритмы причинного анализа. Объединение этих подходов даёт возможность не только выявлять временные и нелинейные зависимости в системе <<мозг--тело>>, но и строить синтетические выборки для валидации гипотез. Предложенный фреймворк повышает точность и интерпретируемость результатов. Его работа проиллюстрирована на датасете игры с теннисом.
-
+		Causal discovery from high-dimensional, nonlinear time series is fundamental for extracting mechanistic insight and guiding interventions in fields ranging from systems neuroscience to climate science.  
+		Classical frameworks such as Granger causality or transfer entropy struggle with latent mixtures, state-dependent dynamics, and the curse of dimensionality.  
+		We introduce \emph{Causal Analysis via Independent Components and State–Space Reconstruction} (CAICSSR), a three-stage pipeline that (i) separates latent sources by non-Gaussian independent component analysis, (ii) reconstructs their attractors with data-adaptive state-space embeddings, and (iii) quantifies directed influence via mutual-information estimators.  
+		Applications to whole-brain fMRI and multi-channel EEG-IMU reveal interpretable causal circuits consistent with neurophysiological literature.  
+		CAICSSR thus provides a principled, scalable framework for latent-space causal discovery and effect quantification in modern time-series data.
+		
+		\bigskip
+		\textbf{Keywords}: \emph{causal discovery, causal inference, EEG, IMU, independent component analysis, convergent cross mapping, mutual information}
 	\end{abstract}
 	
+	\newpage
 	
-	\keywords{ЭЭГ \and ИИМ \and сходящееся перекрёстное отображение \and взаимная информация \and причинно-следственный вывод} 
+	\section{Introduction}
 	
-	\section{Введение}
+	Identifying directed causal links among components of a dynamical system is central to many scientific domains, such as neuroscience, climate science, and economics. [TODO: add references].
+	Learning causal links helps us understand how a system works, not just how its pieces are related.  
+	It also lets us predict the effect of any intervention or change.  
+	In medicine, for example, knowing which brain regions drive others can guide treatment.  
+	In climate studies, causal maps reveal how sea temperature shifts lead to weather changes.  
+	In business, causal links show how one strategy affects various outcomes.  
 	
-	В последние годы наблюдается стремительный рост интереса к исследованию взаимодействия между мозговой активностью и двигательными действиями человека. С этой целью широко применяются методы анализа электроэнцефалографических (ЭЭГ) сигналов и инерциальных данных (ИИМ, инерциальный измерительный модуль), поскольку они позволяют регистрировать, соответственно, нейронную активность и механику движений в реальном времени. Выявление причинно-следственных связей между ЭЭГ и ИИМ играет важнейшую роль в области нейробиологии, медицины, спортивной науки и технологий Brain-Computer Interface (BCI). Традиционные подходы к анализу таких данных — например, методы корреляции или линейной регрессии — зачастую оказываются недостаточными для точного описания сложных нелинейных взаимодействий в системе <<мозг--тело>>.
+	Most existing methods use simple linear models or information‐theory measures to test if one series improves the prediction of another \citep{Granger1969,Schreiber2000}.  
+	They often assume that relationships stay the same over time and that data follow linear patterns.  
+	In practice, real data are rarely this simple.  
+	Systems usually show nonlinear behavior, where the strength or sign of a link can flip as conditions change.  
+	Such “mirage correlations” can mislead linear methods.
+	   
+	However, these methods face substantial challenges including nonlinearity and state dependence, which give rise to “mirage correlations” \citep{Sugihara2012}.  
+	High dimensionality further limits power (the “curse of dimensionality” \citep{Runge2019}).  
 	
-	Чтобы преодолеть указанные ограничения, в настоящей работе рассматривается \textbf{генеративный причинно-следственный подход} (Generative Causal Inference), сочетающий несколько концептуальных направлений:
+	Causal discovery can yield insights directly from raw data by examining the structure of a causal graph.  
+	In neuroscience, many studies apply causal discovery to whole-brain fMRI datasets with the goal of studying brain mechanisms.  
+	Causal discovery also serves as a preliminary step for causal inference by estimating the strength of causal links prior to intervention-based analysis.  
+	Finally, discovered causal information can enhance downstream tasks such as emotion recognition using Granger-causality features \citep{ExampleEmotion2019}.  
 	
+	To overcome the limitations of classical approaches, we introduce \emph{Causal Analysis via State‑Space Reconstruction, Convergent Cross Mapping, and Mutual Information} (CA‑SSR‑CCM), a streamlined three‑stage framework.  
+	First, state‑space reconstruction projects the raw observations onto an unfolded attractor where geometrical relationships between variables are directly interpretable.  
+	Working in this manifold eliminates many of the projection artefacts that confound causal tests in the original measurement space.  
+	Second, convergent cross mapping (CCM) exploits the diffeomorphic correspondence between reconstructed manifolds to identify directed dependencies without assuming linear dynamics or stationarity.  
+	Third, conditional mutual information quantifies the strength of each detected link, yielding a scale‑invariant, distribution‑free measure of influence.  
+	CA‑SSR‑CCM remains effective when signals are mixed, variables are numerous, and coupling strengths change with time, because discovery and scoring operate on low‑dimensional state coordinates rather than on high‑dimensional observables.  
+	Optional dimensionality‑reduction steps, such as independent component analysis, can be inserted into the reconstruction phase to enhance interpretability but are not required for consistency.  
+	
+	In this thesis we establish the theoretical foundations of CA‑SSR‑CCM, proving identifiability under generic observability and weak‑noise conditions and extending Takens’ embedding theorem to the proposed causal pipeline.  
+	We benchmark the method on synthetic systems that are high‑dimensional, nonlinear, and time varying, and we demonstrate its practical value on multichannel EEG data for brain‑connectivity analysis. 
+	
+	The thesis is structured as follows.  
+	Chapter~2 reviews existing causal discovery and inference methods and their limitations.  
+	Chapter~3 details ICA-based latent-space extraction and identifiability guarantees.  
+	Chapter~4 presents state-space reconstruction techniques and parameter selection.  
+	Chapter~5 introduces mutual-information estimators for causal-strength quantification.  
+	Chapter~6 provides empirical validation on simulated and real datasets.  
+	Chapter~7 discusses extensions to time-varying networks and future directions.  
+	
+	\section{Literature review}
+	
+	\subsection{Causal analysis}
+	
+	\subsubsection{Assumptions}\label{subsubsec:causal_assumptions}
+	
+	Robust inference of a time-lagged causal network from purely observational time–series data rests on a small set of structural assumptions that bridge the observable statistical world with the (unobserved) interventionist causal world.  In the framework adopted by Runge (2018) these assumptions—time-order, causal sufficiency, the causal Markov condition, and faithfulness—form the logical foundation for consistency of conditional-independence-based discovery algorithms. We recapitulate each assumption formally, introducing the necessary notation along the way.  
+	
+	\paragraph*{Notation.}
+	Let $\mathbf X_t=(X^1_t,\dots,X^N_t)$ denote an $N$–dimensional discrete-time stochastic process, observed at equidistant times $t\in\mathbb Z$.  
+	For a maximum relevant lag $\tau_{\max}\in\mathbb N$, define the \emph{past} of the process at time $t$ by  
+	$$
+	\mathbf X_{t}^{-}\;=\;(\mathbf X_{t-1},\dots,\mathbf X_{t-\tau_{\max}})\, .
+	$$
+	For two random variables $A,B$ and a conditioning set $\mathbf S$ we write the conditional-independence relation as  
+	$
+	A\;\perp\!\!\!\perp\;B\;\mid\;\mathbf S .
+	$  
+	
+	\paragraph*{Assumption 1 (Time-order).}  
+	For any pair of distinct components $(X^{i},X^{j})$ and any lag $\tau>0$, a directed link $X^{i}_{t-\tau}\rightarrow X^{j}_{t}$ is admissible \emph{only} if the cause temporally precedes the effect, i.e.\ $\tau>0$. Contemporaneous ($\tau=0$) links remain undirected.  
+	
+	\paragraph*{Assumption 2 (Causal sufficiency).}  
+	All relevant causal variables with respect to the problem under study are observed; equivalently, there exist no unmeasured common causes that simultaneously influence two or more observed components.  Under this assumption every statistical dependence induced by a confounder can, in principle, be explained away by conditioning on a subset of the observed variables.  
+	
+	\paragraph*{Assumption 3 (Causal Markov condition).}  
+	Let $\mathcal G=(\mathcal V,\mathcal E)$ be the (unknown) time-series graph whose nodes are $(X^k_{t-\tau})_{k,\tau}$ and whose edges encode the true causal links.  Then, for every node $V\in\mathcal V$ we have  
+	$$
+	V\;\perp\!\!\!\perp\;\text{ND}(V)\;\mid\;\mathrm{PA}(V),
+	$$
+	where $\mathrm{PA}(V)$ denotes the set of direct causes (parents) of $V$ in $\mathcal G$ and $\text{ND}(V)$ its non-descendants.  Hence, once its direct causes are known, $V$ is conditionally independent of every variable that it does not causally affect.  
+	
+	\paragraph*{Assumption 4 (Faithfulness / Stability).}  
+	The joint distribution of $\{\mathbf X_t\}_{t}$ is \emph{faithful} to the causal graph $\mathcal G$: every conditional independence observed in the data arises \emph{only} through the d-separation relations entailed by $\mathcal G$, and conversely every d-separation relation implies a corresponding conditional independence in the distribution.  Formally, for disjoint node sets $A,B,S$  
+	$$
+	A\;\text{d-separated from}\;B\;\text{by}\;S\;\text{in}\;\mathcal G
+	\;\;\Longleftrightarrow\;\;
+	A\;\perp\!\!\!\perp\;B\;\mid\;S .
+	$$
+	Faithfulness excludes measure-zero “cancellation” cases in which different causal pathways produce dependencies that exactly offset each other.  
+	
+	\paragraph*{Implications for estimation.}
+	Taken together, these assumptions guarantee that the population-level conditional independences required by an algorithm such as Full Conditional Independence (FullCI) uniquely encode the underlying causal graph up to its Markov equivalence class.  Under time-order, orienting the edges becomes possible; under causal sufficiency, unshielded colliders can be consistently identified; and faithfulness ensures that no genuine causal link is mistakenly removed.  Violations of any assumption (e.g.\ latent confounders contradicting causal sufficiency, or near-cancellations violating faithfulness) can lead to erroneous edge deletions or spurious orientations, underscoring their critical role in practical causal network reconstruction from time-series data.
+	
+	\subsubsection{Causal Discovery Methods}
+	
+	A rich algorithmic toolbox has emerged for learning causal structure from multivariate time–series and i.i.d.\ data.  Below we summarise six representative methods that are widely used in practice, highlighting their assumptions, optimisation criteria, and suitability for high-dimensional, possibly non-linear systems.
+	
+	
+	\paragraph*{Full Conditional Independence (FullCI).}  
+	Given a maximum lag $\tau_{\max}$, FullCI tests the null hypotheses  
+	$$
+	H_0^{(i\to j,\tau)}:\;X^{i}_{t-\tau}\;\perp\!\!\!\perp\;X^{j}_{t}\;\mid\;\mathbf X^{-}_{t}\setminus\{X^{i}_{t-\tau}\},\quad
+	\tau=1,\dots,\tau_{\max},
+	$$
+	using either linear partial correlation (yielding the classical vector-autoregressive \emph{Granger causality} score) or a non-parametric conditional-mutual-information estimator (yielding a multivariate \emph{transfer-entropy} score).  Rejection of $H_0^{(i\to j,\tau)}$ implies a directed edge $X^{i}_{t-\tau}\!\to\!X^{j}_{t}$.  FullCI is consistent under Assumptions~\ref{subsubsec:causal_assumptions}, but suffers from diminished power in high dimensions due to the large conditioning set.  
+	
+	
+	\paragraph*{PC Algorithm.}  
+	PC (Spirtes \emph{et al.}, 2000) iteratively removes edges from the complete undirected graph by statistical CI tests and then orients the remaining skeleton using sound logical rules.  At population level it returns the Markov-equivalence class (\emph{completed partially directed acyclic graph}, CPDAG) that is faithful to the data.  In the time-series variant, the temporal order provides additional orientation information, narrowing the equivalence class.  Its main limitations are (i) reliance on accurate CI tests under finite samples and (ii) exponential complexity in the worst case.  
+	
+	
+	\paragraph*{LiNGAM.}  
+	The \emph{Linear Non-Gaussian Acyclic Model} assumes that the data satisfy  
+	$
+	\mathbf X = B^\top\mathbf X + \boldsymbol\varepsilon,
+	$
+	where $B$ is a strictly upper-triangular coefficient matrix and $\boldsymbol\varepsilon$ has \emph{independent, non-Gaussian} components.  Exploiting identifiability results from independent-component analysis, LiNGAM recovers a unique causal ordering by estimating $B$ via ICA or related contrast functions.  The non-Gaussianity assumption overcomes Markov-equivalence ambiguity but restricts applicability to linear instantaneous effects.  
+	
+	---
+	
+	\paragraph*{NOTEARS.}  
+	\emph{Non-combinatorial optimisation via trace exponential and augmented lagrangian for structure learning} converts DAG learning into a smooth constrained optimisation problem  
+	$$
+	\min_{B\in\mathbb R^{d\times d}} \;\mathcal L(\mathbf X;B)+\lambda\|B\|_1
+	\quad\text{s.t.}\quad
+	h(B)=0,
+	$$
+	where $h(B)=\operatorname{tr}\!\big(\exp(B\odot B)\big)-d$ encodes acyclicity.  Owing to continuous optimisation, NOTEARS scales to hundreds of variables and easily accommodates generalised linear or neural-network regression losses, though it presumes causal sufficiency and i.i.d.\ samples.  Temporal extensions introduce lagged block-matrices while retaining the same acyclicity constraint.  
+	
+	---
+	
+	\paragraph*{GES (Greedy Equivalence Search).}  
+	GES is a score-based search that proceeds in two phases: (i) a forward pass greedily adds edges maximising a penalised likelihood (e.g.\ BIC), and (ii) a backward pass greedily deletes edges to further improve the score, operating directly on CPDAGs.  Under faithfulness and certain regularity conditions it is asymptotically consistent and often more sample-efficient than PC, but the scoring step assumes a parametric (typically Gaussian) model and the greedy heuristic may converge to sub-optimal local maxima.  
+	
+	---
+	
+	\paragraph*{Invariant Causal Prediction (ICP).}  
+	ICP exploits environmental or experimental heterogeneity.  Suppose the data are partitioned into environments $e\in\mathcal E$ such that the structural equation for a target $Y$ remains invariant:
+	$$
+	Y \;=\; f(\mathbf X_{S}) + \varepsilon,\qquad
+	\varepsilon\!\perp\!\!\!\perp\!\mathbf X_{S},\;\; \varepsilon\!\perp\!\!\!\perp\! e .
+	$$
+	ICP searches for the \emph{largest} subset $S$ of predictors whose conditional distribution of $Y$ is identical across environments—these predictors are then guaranteed to be a subset of the true parent set.  The method is non-parametric, accommodates hidden confounders that do not violate invariance, and provides finite-sample confidence sets, but requires sufficiently rich environment variation (e.g.\ interventions, covariate shifts).  
+	
+	\paragraph*{Summary.}
+	No single algorithm dominates across all scenarios.  FullCI and PC provide explicit control of false discoveries under the Markov-faithfulness paradigm but degrade with dimensionality.  LiNGAM offers point-wise identifiability beyond equivalence classes at the price of linearity and non-Gaussian noise.  Score-based (GES) and continuous-optimisation (NOTEARS) approaches scale favourably yet depend on possibly misspecified likelihood models.  Finally, ICP leverages distributional shifts to circumvent traditional identifiability obstacles, illustrating how auxiliary information can compensate for weaker structural assumptions.  In practice, a hybrid strategy—combining temporal ordering, sparsity priors, independent noise structure, and environmental variation—often yields the most reliable causal insights.
+	
+	\begin{table}[htbp]
+		\centering
+		\begin{tabulary}{\textwidth}{L|C|C}
+			\toprule
+			\textbf{Method} & \textbf{Core consistency assumptions} & \textbf{Asymptotic run time}\\
+			\midrule
+			\textbf{FullCI} (Granger / Transfer Entropy) &
+			Time-order; causal sufficiency; causal Markov; faithfulness; (weak-)stationarity &
+			$\mathcal O\!\bigl(N^{2}\,\tau_{\max}\,T\bigr)$ (linear tests)\\[4pt] \hline
+			
+			\textbf{PC algorithm} &
+			Causal sufficiency; acyclicity; causal Markov; faithfulness; valid CI oracle &
+			Worst case $\mathcal O\!\bigl(N^{2}2^{N}\bigr)$; sparse graphs $\mathcal O(N^{k})$\\[4pt] \hline
+			
+			\textbf{LiNGAM} &
+			Linear SEM; non-Gaussian independent errors; acyclicity; causal sufficiency &
+			ICA step $\mathcal O\!\bigl(N^{2}T\bigr)$ $+$ matrix ops $\mathcal O(N^{3})$\\[4pt] \hline
+			
+			\textbf{NOTEARS} &
+			Parametric SEM; acyclicity constraint $h(B)=0$; causal sufficiency; correctly specified loss &
+			Each gradient step $\mathcal O(N^{2})$; convergence $\mathcal O(N^{3})$\\[4pt] \hline
+			
+			\textbf{GES} (Greedy Equivalence Search) &
+			Decomposable score (e.g.\ BIC); acyclicity; causal sufficiency; causal Markov; faithfulness &
+			Worst case $\mathcal O(N^{4})$; sparse $\mathcal O\!\bigl(N^{2}\log N\bigr)$\\[4pt] \hline
+			
+			\textbf{ICP} (Invariant Causal Prediction) &
+			Invariance of $Y\mid X_S$ across environments; independent noise; no $\text{env}\!\to\!Y$ path; sufficient heterogeneity; Markov for $Y$ &
+			Exhaustive search $\mathcal O(2^{N})$; with screening $\mathcal O\!\bigl(N^{3}T\bigr)$\\
+			\bottomrule
+		\end{tabulary}
+		\caption{Causal-discovery algorithms, their key structural/statistical assumptions, and rough computational complexity for $N$ variables and $T$ samples.}
+		\label{tab:causal_methods_assumptions}
+	\end{table}
+		
+	\subsection{State Space Reconstruction}\label{sec:ssr}
+	
+	\textbf{State-space reconstruction (SSR)} refers to the process of constructing a multi-dimensional phase space from time-series data such that the dynamics of an unknown system can be studied in that space. 
+	Even if a few variables of a dynamical system are observed, SSR aims to recover the underlying state trajectory  in a reconstructed state-space that is diffeomorphic to the true state-space of the system.
+	evolving on an attractor $\mathcal{A}$ whose fractal dimension is $d_A$.  
+	
+	Let $(M, \varphi^t)$ be a smooth, compact manifold of dimension $d_A$, with flow
+	
+	$$
+	\varphi^t\colon M\;\to\;M\,,\qquad x(t)=\varphi^t(x_0)\,,
+	$$
+	
+	and let the observation function be
+	
+	$$
+	h\colon M\;\to\;\mathbb{R}^s, 
+	$$
+	
+	so the time series data is a function $$ y(t)\;=\;h\bigl(x(t)\bigr). $$
+	
+	\subsubsection{Time–Delay Embedding}
+	
+	Following Packard \citep{Packard1980} and Takens \citep{Takens1981}, construct the delay‐coordinate map:
+	
+	$$
+	\Psi_{E,\tau}\colon M\;\to\;\mathbb{R}^E,
+	\quad
+	\Psi_{E,\tau}\bigl(x(t)\bigr)
+	=\Bigl(y(t),\,y(t-\tau),\,y(t-2\tau),\dots,y\bigl(t-(E-1)\tau\bigr)\Bigr).
+	$$
+	
+	Takens’ theorem states that, for a generic $h$ and any smooth flow on an attractor of dimension $d_A$, if $E > 2\,d_A,$ then $\Psi_{E,\tau}$ is an embedding (i.e.\ ae diffeomorphism onto its image).
+	
+	Under the embedding $\Psi_{E,\tau}$, attractor dimension and lyapunov exponents are preserved.
+	
+	\subsubsection{Singular Spectrum Analysis (SSA)}
+	
+	\textbf{Singular Spectrum Analysis} is a method that combines delay embedding with linear decomposition techniques to extract modes of variability from a time series. It can be seen as a data-driven, nonparametric spectral decomposition method, closely related to \textit{principal component analysis} (PCA) on time-delay vectors. In SSA, one first forms the Hankel matrix of the time series using a chosen window length $L$. For a series $X = (x_1, \dots, x_N)$, the trajectory matrix is: 
+	
+	$$ 
+	\mathbf{X} = [\,X_1 : X_2 : \cdots : X_K\,] \;\in \mathbb{R}^{L \times K}, \quad \text{where } X_i = (x_i, x_{i+1}, \dots, x_{i+L-1})^T, 
+	$$ 
+	
+	and $K = N - L + 1$. 
+	Next, SSA performs a \textit{singular value decomposition} (SVD) of this trajectory matrix: $\mathbf{X} = \sum_{j=1}^L \sqrt{\lambda_j}\,U_j V_j^T$, equivalently diagonalizing the $L\times L$ lag-covariance matrix $\mathbf{S} = \mathbf{X}\mathbf{X}^T$ to obtain eigenvalues $\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_L$ and eigenvectors $U_j$. The eigenvectors $U_j$ provide an orthonormal basis of the $L$-dimensional embedding space, and projecting the trajectory matrix onto each $U_j$ yields the principal components (also called temporal EOFs in SSA literature). 
+	
+	The final steps involve **grouping** and **reconstruction**: one groups subsets of these components (e.g. those corresponding to a signal or trend of interest) and computes a reduced-rank approximation of $\mathbf{X}$. From this approximated trajectory matrix, the time series is reconstructed by averaging along the diagonals (each anti-diagonal corresponds to one time index).
+	By appropriate grouping, one can separate the original series into a sum of interpretable components: e.g. a slowly varying trend, oscillatory modes (often appearing as pairs of nearly equal $\lambda_j$ for sinusoidal components), and residual noise
+	
+	\subsubsection{Manifold–Learning Embeddings}
+	
+	Classical delay embeddings and SSA use linear or fixed transformations. \textbf{Manifold learning} techniques, developed largely in the 2000s, enable nonlinear dimensionality reduction. 
+	These methods attempt to discover a low-dimensional manifold on which the high-dimensional data lie, preserving intrinsic geometric structure.
+	The key idea is that if the system has an attractor of dimension $d$, the data (in some embedding space) essentially lie on an $d$-dimensional manifold $\mathcal{M}$, and algorithms can learn coordinates on $\mathcal{M}$ that flatten out the nonlinear twists of the attractor.
+	
+	Common manifold learning algorithms include Locally Linear Embedding (LLE), Isomap, t-SNE/UMAP, among others.
+	These are unsupervised algorithms that take a set of data points in a high-$D$ space and produce coordinates in a lower $d$-dimensional space.
+	They typically construct a graph or neighborhood relations among the data points and then optimize some objective to preserve local distances or global geodesic structure.
+	
+	When applying these to time-series, a typical approach is: first, embed the time series in latent space to get a point cloud $\{y(t)\}$ that samples the attractor.
+	Then run a manifold learning algorithm on $\{y(t)\}$.
+	The result will be a set of coordinates $\{\xi(t)\}$ in $\mathbb{R}^d$ that parametrizes the data manifold.
+	Ideally, $d$ will equal the true attractor dimension or a useful reduced dimension.
+	
+	\subsubsection{Riemannian and Geometric Representations}
+	Another modern avenue for SSR involves representing segments of time series as geometric objects like covariance matrices or subspaces, which lie on curved manifolds. 
+	The motivation is that certain features of dynamical systems -- especially in high-dimensional or multivariate settings -- are naturally encoded by covariance or subspace structure, and by considering the appropriate geometry one can better compare and analyze these features.
+	
+	\paragraph{SPD–covariance manifold.}  
+	Given a $d$-dimensional multivariate time series or a $d$-channel signal and an embedding dimension $D$, one can form $D$-lagged vectors as before: $s_e(t) = [s_1(t), ..., s_d(t),\; s_1(t+\tau),...,s_d(t+\tau),\;\dots,\;s_1(t+(D-1)\tau),...,s_d(t+(D-1)\tau)]^T \in \mathbb{R}^{dD}$.
+	This is essentially a phase-space reconstruction applied to each channel.
+	From a window of such vectors, one can compute a \textbf{sample covariance matrix} $R = \frac{1}{N}\sum_{i=1}^N s_e(t_i) s_e(t_i)^T$, which will be a $dD \times dD$ SPD matrix (symmetric positive-definite).
+	This covariance encapsulates both the spatial correlations between channels and temporal correlations up to lag $(D-1)\tau$.
+	Each SPD matrix can be seen as a representation of the local state dynamics.
+	By comparing SPD matrices from different time windows, one can quantify similarity of dynamical states.
+	In practice, this approach has been very successful in scenarios like EEG where the true state is high-dimensional and noisy; the covariance provides a robust signature of the state that filters out high-frequency noise.
+	
+	\paragraph{Grassmannian subspaces.}  
+	Instead of the full covariance, one can represent the **subspace** spanned by certain vectors associated with the time series. A prime example: in SSA or subspace system identification, we obtain an orthonormal basis of principal components (or an observability subspace) for the dynamics. The column space spanned by, say, the first $r$ singular vectors $U_1,\dots,U_r$ of the trajectory matrix is an $r$-dimensional subspace of $\mathbb{R}^L$. This subspace itself can be treated as a point on a Grassmann manifold $\mathcal{G}(r, L)$ (the set of all $r$-dimensional subspaces in $\mathbb{R}^L$). The Grassmann manifold has a natural Riemannian metric (derived from principal angles between subspaces), so one can measure distances between two subspaces (for instance, two different time series might yield two subspaces capturing their dynamics, and one can compute how “far apart” these dynamics are on $\mathcal{G}$). This concept is used in **subspace-based clustering of time series** and in linear system identification: each linear dynamical system of order $r$ corresponds to an $r$-dimensional observability subspace. By embedding an unknown system’s data and estimating an $r$-dim subspace, one effectively reconstructs a linear state-space. Clustering on Grassmann then groups systems with similar subspaces. Recent reviews categorize various Grassmannian methods for multivariate time series clustering and modeling, highlighting that many algorithms differ by how they construct the subspace (e.g., via SVD of Hankel matrix, via autoregressive model subspace, or via frequency domain) but ultimately compare subspaces on $\mathcal{G}$.
+	
+	\subsubsection{Summary}
+	
+	State-space reconstruction remains a cornerstone in the analysis of nonlinear time series and dynamical systems.
+	Classical methods like time-delay embedding and singular spectrum analysis provide the theoretical and practical foundation, allowing us to reconstruct attractors and identify dynamics from scalar observations.
+	Modern developments have greatly expanded the toolkit: nonlinear manifold learning preserves the true geometry of attractors in reduced coordinates, Riemannian approaches leverage the geometry of covariance and subspace manifolds to compare complex dynamics.
+	Each method comes with its assumptions, strengths, and limitations, which are summarized in table \ref{tab:ssr_selected}.
+	In practice, the choice of method depends on the system characteristics  and the analysis goal.
+	
+	\begin{table}[bhtp]
+		\centering
+		\renewcommand{\arraystretch}{1.25} % uniform row height
+		\begin{tabularx}{\textwidth}{
+				>{\raggedright\arraybackslash}p{3.3cm}   % fixed‑width first column
+				>{\raggedright\arraybackslash}X           % assumptions
+				>{\raggedright\arraybackslash}X           % strengths
+				>{\raggedright\arraybackslash}X}          % limitations
+			\toprule
+			\textbf{Method} & \textbf{Assumptions} & \textbf{Strengths} & \textbf{Limitations} \\
+			\midrule
+			\textbf{Time-delay embedding} &
+			deterministic, low-dimensional system; long and clear time series;  &
+			simple; model-free; provably diffeomorphic reconstruction &
+			parameter sensitivity and noise amplification \\[0.3em] \hline
+			
+			\textbf{Singular Spectrum Analysis} &
+			$-$ &
+			data-driven decomposition &
+			linear reconstruction; parameter choices \\[0.3em] \hline
+			
+			\textbf{Manifold learning-based embeddings} &
+			data lie on a smooth, low‑dimensional manifold; there is a large set of sample points &
+			nonlinear dimensionality reduction &
+			computational complexity ($O(N^2)$ or worse); no dynamics explicit; sensitive to kernel scale and neighbourhood choice; diffeomorphic equivalence is not guaranteed \\[0.3em] \hline
+			
+			\textbf{Riemannian \& geometric approaches} &
+			relevant information about the state resides in second-order statistics or in a linear subspace of some feature space; dynamics captured via geodesic distances or curvature tensors &
+			robustness; reduced complexity &
+			information loss; not one-to-one; geometric complexity \\
+			\bottomrule
+		\end{tabularx}
+		\caption{Concise comparison of selected state‑space reconstruction methods.}
+		\label{tab:ssr_selected}
+	\end{table}
+	
+	\section{Problem statement}
+	
+	Let
+	\[
+	\mathbf X(t)=\bigl[X_{1}(t),\dots ,X_{p}(t)\bigr]^{\!\top}\in\mathbb R^{p},
+	\qquad t=1,\dots ,T ,
+	\]
+	denote a multivariate, possibly nonlinear and non‑stationary time series
+	generated by an unknown smooth dynamical system.
+	
+	\begin{quote}
+		\textbf{Goal.}  
+		From the observations $\mathbf X(1{:}T)$ infer a \emph{directed weighted
+			graph}
+		\[
+		\mathcal G=(V,E,W), \qquad
+		V=\{1,\dots ,m\},\;
+		E\subseteq V\times V,\;
+		W:E\to\mathbb R_{\ge 0},
+		\]
+		such that
+		\begin{enumerate}[label=(\roman*)]
+			\item a directed edge $(j,i)\in E$ exists
+			\emph{iff} subsystem $j$ is a dynamical cause of subsystem $i$
+			after accounting for all other variables;
+			\item the associated weight $W_{j\to i}$ is a non‑negative scalar
+			quantifying the \emph{strength} of that causal influence,
+			comparable across edges.
+		\end{enumerate}
+	\end{quote}
+	
+	Deliverables:
 	\begin{itemize}
-		\item \textbf{Моделирование сигналов на многообразиях.}
-		ЭЭГ-данные представляют собой высокоразмерный временной ряд, источник которого ~--- множество независимых (или частично независимых) нейронных процессов. Движения, в свою очередь, могут быть представлены на пространстве кинематических параметров, где измерения акселерометра и гироскопа описывают динамику конечностей. Использование геометрических методов и концепции римановой геометрии (Riemannian geometry) позволяет корректно учитывать внутреннюю структуру и ковариации в данных, избегая упрощающих линейных допущений.
-		
-		\item \textbf{Физически-информированные нейронные сети (PINN).}
-		Для описания динамики движений и сигналов ИИМ всё чаще применяются Physics-Informed Neural Networks. В отличие от стандартного глубокого обучения, PINN встраивает уравнения классической механики (или другой физической модели) прямо в функцию потерь. Это даёт возможность строить более реалистичные (и интерпретируемые) модели движения, которые затем могут использоваться для проверки гипотез о причинно-следственных связях с мозговой активностью.
-		
-		\item \textbf{Причинно-следственный анализ на базе информационных мер.}
-		Использование мер информационной теории, таких как взаимная информация (Mutual Information, MI) и дивергенция Кульбака--Лейблера (Kullback--Leibler divergence, KL), даёт статистически обоснованные способы выявлять и количественно оценивать степень зависимости между сигнальными распределениями. В частности, инструменты вроде Convergent Cross Mapping (CCM) или Probabilistic CCM позволяют проверить, какие каналы ЭЭГ <<вызывают>> изменения ИИМ, или что связь обусловлена иными факторами.
+		\item The vertex set $V$ (interpretable latent or observed subsystems);
+		\item The edge list $E$ indicating statistically significant
+		causal links;
+		\item The causal‑strength matrix
+		$\mathbf W=[W_{j\to i}]_{i,j=1}^{m}\in\mathbb R_+^{m\times m}$.
 	\end{itemize}
 	
-	Объединение подходов моделирования с методами причинно-следственного анализа  лежит в основе предлагаемого здесь \textbf{генеративного причинно-следственного вывода}. Это позволяет не только установить факт корреляции или временной зависимости между сигналами, но и даёт возможность:
-	
-	\begin{itemize}
-		\item оценивать устойчивость данных выводов при варьировании параметров модели;
-		\item генерировать синтетические выборки, отражающие ключевые особенности реальных записей ЭЭГ и ИИМ;
-		\item учитывать сложность биологических систем, проявляющуюся в нелинейных и многокомпонентных связях, которые не могут быть адекватно описаны классическими линейными моделями.
-	\end{itemize}
-	
-	Таким образом, целью данной работы является разработка единого методологического фреймворка, который объединяет:
-	\begin{enumerate}
-		\item геометрические и физические представления о природе исследуемых сигналов,
-		\item продвинутые методы генерации и анализа данных,
-		\item алгоритмы выявления причинно-следственных связей.
+	Assumptions:
+	\begin{enumerate}[label=\arabic*.]
+		\item \textit{Smooth dynamics:} each subsystem evolves on a compact,
+		finite‑dimensional attractor admitting delay embedding.
+		\item \textit{Sufficient observability:} the recorded (or projected)
+		channels uniquely encode each attractor state.
+		\item \textit{Faithfulness:} a non‑zero causal effect yields a
+		non‑zero statistical signature detectable from data of length $T$.
+		\item \textit{Low measurement noise:} additive noise is small enough not
+		to violate embedding diffeomorphism.
 	\end{enumerate}
 	
-	В дальнейшем мы продемонстрируем, как такой подход может применяться на практике при анализе когнитивных и моторных данных, а также обсудим преимущества и текущие ограничения.
+	\section{Suggested Method CA-SSR-CCM}
 	
-	\section{Теоретическая часть}
+	\subsection{Embedding (SSR)}
+	For each observable or latent component $i\in\{1,\dots ,m\}$ choose an
+	embedding dimension $E_{i}$ and delay $\tau_{i}$ (Takens’ conditions) and
+	construct
+	\begin{equation}
+		\mathbf y_{i}(t)=
+		\bigl[
+		\widetilde X_{i}(t),
+		\widetilde X_{i}(t-\tau_{i}),
+		\dots ,
+		\widetilde X_{i}(t-(E_{i}-1)\tau_{i})
+		\bigr]^{\!\top}\in\mathbb R^{E_{i}},
+		\label{eq:ssr}
+	\end{equation}
+	where $\widetilde X_{i}$ may be either a raw channel or an optional linear
+	projection $\widetilde{\mathbf X}=\mathbf P\,\mathbf X$ (PCA, ICA, NMF)
+	chosen for interpretability.
 	
-	\subsection{Общие обозначения}
+	\subsection{Information‑Theoretic CCM (IT‑CCM)}
+	For two reconstructed manifolds
+	$\mathcal M_{i}=\{\mathbf y_{i}(t)\}$ and
+	$\mathcal M_{j}=\{\mathbf y_{j}(t)\}$
+	and a prediction horizon $\tau>0$:
+	%
+	\paragraph{Local prediction.}
+	Using the $K$ nearest neighbours of $\mathbf y_{j}(t)$ (library size $L$),
+	form the simplex projection
+	\begin{equation}
+		\hat X_{i,j}^{(L)}(t+\tau)=
+		\sum_{k=1}^{K} w_{k}\,\widetilde X_{i}(t_{k}+\tau).
+		\label{eq:simplex}
+	\end{equation}
 	
-	Рассмотрим два временных ряда: 
-	\[
-	\mathbf{X}(t) \in \mathbb{R}^{N \times d_X}, 
-	\quad
-	\mathbf{Y}(t) \in \mathbb{R}^{N \times d_Y},
-	\quad
-	t = 1,2,\dots,T.
-	\]
+	\paragraph{Cross‑map skill via mutual information.}
+	\begin{equation}
+		\rho_{j\to i}^{(L)}(\tau)=
+		MI\!\bigl(
+		\hat X_{i,j}^{(L)}(t+\tau);
+		\widetilde X_{i}(t+\tau)
+		\bigr),
+		\label{eq:itccm}
+	\end{equation}
+	where $I(\cdot;\cdot)$ is estimated with the
+	Kraskov–Stögbauer–Grassberger $k$‑NN method.
 	
-	Пусть $p(\mathbf{X}, \mathbf{Y})$ обозначает совместное распределение этих данных.
+	\paragraph{Causality test.}
+	A directed edge $(j,i)$ is declared present if
+	\begin{equation}
+		\max_{L}\rho_{j\to i}^{(L)}(\tau)\;>\;
+		\rho_{\text{surrogate},\,1-\alpha}
+		\quad\text{for some } \tau\le\tau_{\max},
+		\label{eq:criterion}
+	\end{equation}
+	and the trajectory of $\rho_{j\to i}^{(L)}(\tau)$ converges
+	monotonically in $L$.
 	
-	Наша цель --- проанализировать причинно-следственные связи между $\mathbf{X}$ и $\mathbf{Y}$, то есть понять, существует ли (и насколько выражена) направленная зависимость:
-	\[
-	\mathbf{X} \;\longrightarrow\; \mathbf{Y},
-	\quad
-	\text{или}
-	\quad
-	\mathbf{Y} \;\longrightarrow\; \mathbf{X}.
-	\]
+	\paragraph{Edge weight.}
+	\begin{equation}
+		W_{j\to i}=
+		\max_{\tau\le\tau_{\max}}\;
+		\max_{L}\rho_{j\to i}^{(L)}(\tau)
+		\quad\bigl[\text{nats}\bigr].
+		\label{eq:weight}
+	\end{equation}
 	
-	\subsection{Независимый анализ компонент (ICA)}
+	\subsection{Graph Assembly}
+	Collect all significant edges $(j,i)$ and their weights~\eqref{eq:weight}
+	to yield the directed weighted graph
+	$\widehat{\mathcal G}=(V,E,W)$ satisfying the problem statement.
 	
-	При наличии высокоразмерных сигналов $\mathbf{X}(t)$, содержащих множество смешанных источников, часто вводится модель:
-	\[
-	\mathbf{X}(t) = A\,\mathbf{S}(t),
-	\]
-	где $\mathbf{S}(t)\in\mathbb{R}^{d_S}$ --- вектор независимых компонент, а $A$ --- постоянная матрица смешения. Предполагается, что координаты $\mathbf{S}(t)$ статистически независимы:
-	\[
-	p(\mathbf{S}) \;=\; \prod_{k=1}^{d_S} p\bigl(S_k\bigr).
-	\]
-	Задача независимого анализа компонент сводится к оценке $\widehat{A}^{-1}$ (или непосредственно $A$) так, чтобы 
-	\[
-	\widehat{\mathbf{S}}(t) \;=\; \widehat{A}^{-1}\,\mathbf{X}(t)
-	\]
-	максимизировало независимость компонент. Для измерения независимости используют различные функции (энтропию, взаимную информацию и др.). Итоговые независимые компоненты $\widehat{\mathbf{S}}(t)$ далее могут анализироваться вместо $\mathbf{X}(t)$, что часто упрощает выявление причинно-следственных связей, особенно в ЭЭГ-исследованиях.
+	The dominant complexity per pair $(j,i)$ and delay $\tau$ is
+	$O\!\bigl(k\,T\log T\bigr)$ for $k$‑NN mutual‑information estimation.
+	Efficient neighbour searches (kd‑trees, ball trees) and parallelisation
+	over variable pairs are recommended for large $p$ or long records.
 	
-	\subsection{Физически-информированные нейронные сети (PINN)}
+%	\section{Suggested method CA-SSR-CCM}
+%	
+%	\subsection{General notation}
+%	
+%	Consider two time series
+%	$$
+%	\mathbf{X}(t) \in \mathbb{R}^{N \times d_X}, 
+%	\qquad
+%	\mathbf{Y}(t) \in \mathbb{R}^{N \times d_Y},
+%	\qquad
+%	t = 1,2,\dots,T.
+%	$$
+%	
+%	Let $p(\mathbf{X},\mathbf{Y})$ denote the joint distribution of these data.
+%	
+%	Our objective is to analyse the causal relationships between $\mathbf{X}$ and $\mathbf{Y}$, i.e.\ to determine whether there exists (and how strong it is) a directed dependence
+%	$$
+%	\mathbf{X} \;\longrightarrow\; \mathbf{Y},
+%	\qquad\text{or}\qquad
+%	\mathbf{Y} \;\longrightarrow\; \mathbf{X}.
+%	$$
+%	
+%	\subsection{Independent Component Analysis (ICA)}
+%
+%	When one observes high-dimensional signals $\mathbf{X}(t)$ that contain mixtures of many latent sources, it is common to introduce the model
+%	$$
+%	\mathbf{X}(t)=A\,\mathbf{S}(t),
+%	$$
+%	where $\mathbf{S}(t)\in\mathbb{R}^{d_S}$ is a vector of independent components and $A$ is a constant mixing matrix.  The coordinates of $\mathbf{S}(t)$ are assumed to be statistically independent:
+%	$$
+%	p(\mathbf{S}) \;=\; \prod_{k=1}^{d_S} p\!\bigl(S_k\bigr).
+%	$$
+%	The goal of independent component analysis is to estimate $\widehat{A}^{-1}$ (or, equivalently, $A$) such that
+%	$$
+%	\widehat{\mathbf{S}}(t) \;=\; \widehat{A}^{-1}\,\mathbf{X}(t)
+%	$$
+%	maximises the mutual independence of the components.  Measures of independence include entropy, mutual information, and related criteria.  The resulting independent components $\widehat{\mathbf{S}}(t)$ can then be analysed instead of the raw observations $\mathbf{X}(t)$, which often simplifies the discovery of causal relationships—especially in EEG studies.
+%
+%	\subsection{Convergent Cross Mapping (CCM)}
+%	
+%	To test the hypothesis that $\mathbf{X}(t)$ causally influences $\mathbf{Y}(t)$ one may use **convergent cross mapping**.  Form a “shadow” (delay) embedding
+%	$$
+%	M_{X,t}
+%	\;=\;
+%	\bigl(X_t,\;X_{t-\tau},\;\dots,\;X_{t-(E-1)\tau}\bigr),
+%	$$
+%	where $E$ is the embedding dimension and $\tau$ is the time-delay.  The embedding $M_{Y,t}$ is defined analogously.  
+%	
+%	If the vector $M_{X,t}$ can accurately **reconstruct** $\mathbf{Y}_t$, i.e.\
+%	$$
+%	\widehat{\mathbf{Y}}_t
+%	\;=\;
+%	\sum_{i=1}^{k} w_i \,\mathbf{Y}_{n_i},
+%	$$
+%	where $n_i$ are the indices of the $k$ nearest neighbours of $M_{X,t}$ in the $M_X$ space, then one concludes that there is a dynamical causal link $\mathbf{X}\!\to\!\mathbf{Y}$.  The statistic
+%	$$
+%	\rho_{X\to Y}
+%	\;=\;
+%	\mathrm{corr}\!\Bigl(\{\widehat{\mathbf{Y}}_t\},\,\{\mathbf{Y}_t\}\Bigr)
+%	$$
+%	should increase as the size of the “library” (the set of points used for reconstruction) grows, provided the causal direction $\mathbf{X}\!\to\!\mathbf{Y}$ is genuine.
+%
+%	\subsection{Information-based Convergent Cross Mapping}
+%	
+%	Instead of point estimates we consider the distributions $p\bigl(Y_t \mid M_{X,t}\bigr)$ and $p(Y_t)$.
+%	
+%	Accordingly, we replace the correlation measure by mutual information as the estimate of causal influence:
+%	$$
+%	Prob_{\text{CCM}}(X, Y)
+%	= MI(M_X,\,Y)
+%	=
+%	\mathbb{E}_{X}\!
+%	\Bigl[
+%	D_{\mathrm{KL}}
+%	\!\bigl(
+%	p\bigl(Y \mid M_X\bigr)
+%	\,\big\|\,
+%	p\bigl(Y\bigr)
+%	\bigr)
+%	\Bigr],
+%	$$
+%	where $D_{\mathrm{KL}}$ denotes the Kullback–Leibler divergence.
+%	
+%	Because mutual information is symmetric, assessing directed (one-way) links requires conditional mutual information:
+%	$$
+%	MI(X, Y \mid Y_{\mathrm{hist}})
+%	=
+%	\mathbb{E}_{X,\,Y_{\mathrm{hist}}}\!
+%	\Bigl[
+%	D_{\mathrm{KL}}
+%	\bigl(
+%	p\bigl(
+%	Y \mid M_X,\,Y_{\mathrm{hist}}
+%	\bigr)
+%	\,\big\|\,
+%	p\bigl(
+%	Y \mid Y_{\mathrm{hist}}
+%	\bigr)
+%	\bigr)
+%	\Bigr].
+%	$$
+%	
+%	\begin{algorithm}[h!]
+%		\caption{Probabilistic detection of the influence $\mathbf{X}\!\to\!\mathbf{Y}$ based on ICA and kernel density estimation (KDE)}
+%		\label{alg:ICA_KDE_Causal}
+%		
+%		\textbf{Input:}
+%		\begin{itemize}
+%			\item EEG observations $\{\mathbf{X}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_X}$.
+%			\item IMU observations $\{\mathbf{Y}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_Y}$.
+%			\item Hyper-parameters: number of independent components $r$ for ICA; embedding dimension $E$ and time-lag $\tau$; kernel bandwidths $h_X$ and $h_Y$.
+%		\end{itemize}
+%		
+%		\textbf{Output:}
+%		\begin{itemize}
+%			\item A causal DAG\footnote{A directed acyclic graph whose edges represent the detected causal influences.}.
+%		\end{itemize}
+%		
+%		\begin{enumerate}
+%			\item \textbf{Independent Component Analysis (ICA).}
+%			
+%			\[
+%			\mathbf{X}_{\mathrm{raw}}(t) \;=\; A\,\mathbf{S}(t),
+%			\qquad
+%			\mathbf{S}(t)\in\mathbb{R}^{r},
+%			\qquad
+%			A\in\mathbb{R}^{d_X\times r}.
+%			\]
+%			
+%			Estimate the independent components:
+%			\[
+%			\widehat{\mathbf{S}}(t)
+%			\;=\;
+%			\widehat{A}^{-1}\,
+%			\mathbf{X}_{\mathrm{raw}}(t).
+%			\]
+%			
+%			\item \textbf{Construction of temporal embeddings for $\mathbf{X}$ and $\mathbf{Y}$.}
+%			
+%			For each $t$ define
+%			\[
+%			M_{X,t}
+%			\;=\;
+%			\bigl(\widehat{\mathbf{S}}(t),\,
+%			\widehat{\mathbf{S}}(t-\tau),\,
+%			\dots,\,
+%			\widehat{\mathbf{S}}(t-(E-1)\tau)\bigr)
+%			\;\in\;\mathbb{R}^{rE},
+%			\]
+%			\[
+%			M_{Y,t}
+%			\;=\;
+%			\mathbf{Y}_{\mathrm{raw}}(t)
+%			\;\in\;\mathbb{R}^{d_Y E}.
+%			\]
+%			
+%			\item \textbf{Causal-effect estimation.}
+%			
+%			In the joint space $(M_{X,t},\,M_{Y,t})$ compute, for each
+%			$l\in\{1,\dots,d_Y\}$, the influence of $\mathbf{X}$ on $Y_l(t)$ via
+%			\[
+%			\mathrm{Prob_{CCM}}\!\bigl(M_{X,t},\,Y_l(t)\bigr).
+%			\]
+%			Likewise, for every $m\in\{1,\dots,d_X\}$ evaluate
+%			\[
+%			\mathrm{Prob_{CCM}}\!\bigl(M_{Y,t},\,X_m(t)\bigr).
+%			\]
+%		\end{enumerate}
+%	\end{algorithm}
+
+
+	\section{Computational experiment}
+	TODO
 	
-	Сигналы $\mathbf{Y}(t)$ могут удовлетворять законам механики, описываемым уравнениями:
-	\[
-	\frac{d^2 \mathbf{r}(t)}{dt^2} \;=\; \mathbf{f}\!\bigl(\mathbf{r}(t), \dot{\mathbf{r}}(t), \theta\bigr),
-	\]
-	где $\mathbf{r}(t) \in \mathbb{R}^m$ --- координаты (или углы) исследуемого объекта во времени, а $\theta$ --- набор физических параметров (масса, длины звеньев и т.\,п.). При использовании модели PINN мы строим приближающую функцию
-	\[
-	\mathbf{u}(t,\boldsymbol{\Theta}) \;\approx\; \mathbf{r}(t),
-	\]
-	где $\boldsymbol{\Theta}$ --- обучаемые веса нейронной сети. В функцию потерь $\mathcal{L}(\boldsymbol{\Theta})$ помимо ошибки на измеренных данных $\mathbf{Y}(t)$ (которая соответствует ускорению или угловой скорости) добавляют слагаемое, обеспечивающее физическую согласованность:
-	\[
-	\mathcal{L}(\boldsymbol{\Theta})
-	\;=\;
-	\sum_{t}\Bigl\|\ddot{\mathbf{u}}(t,\boldsymbol{\Theta})-\mathbf{f}\!\bigl(\mathbf{u}(t,\boldsymbol{\Theta}),\dot{\mathbf{u}}(t,\boldsymbol{\Theta}),\theta\bigr)\Bigr\|^2
-	\;+\;
-	\sum_{t}\Bigl\|\ddot{\mathbf{u}}(t,\boldsymbol{\Theta})-\mathbf{Y}(t)\Bigr\|^2,
-	\]
-	где первая сумма отвечает за удовлетворение уравнениям движения, а вторая --- за согласие с наблюдениями из IMU.
+	\section{Error analysis}
+	TODO
 	
-	При введении стохастических факторов (например, случайных начальных условий) получается вероятностная модель
-	\[
-	p_{\boldsymbol{\Theta}}(\mathbf{Y}) 
-	\;\approx\;
-	\prod_{t} p_{\boldsymbol{\Theta}}(\mathbf{Y}(t) \,\vert\, \mathbf{u}(t,\boldsymbol{\Theta})),
-	\]
-	позволяющая учесть изменчивость движений при неизменной задаче.
+	\section{Future Directions}\label{sec:future}
 	
-	\subsection{Метод сходящихся перекрёстных отображений (CCM)}
+	The next stage of my research concentrates on two complementary ideas.  
+	The first one aims at \emph{improving the existing pipeline} by incorporating explicit time‑varying dependencies.  
+	Sequential locally weighted global linear maps (S‑maps) produce, at every observation time $t$, a Jacobian matrix $\mathbf J(t)=\bigl[\partial x_j(t+1)\!/\!\partial x_i(t)\bigr]_{i,j=1}^{d}$.  
+	Each coefficient $J_{ij}(t)$ quantifies the instantaneous sensitivity of variable $X_j$ one step ahead to small perturbations of $X_i$ at the current state.  
+	Treating the stochastic process $\{\mathbf J(t)\}_{t=1}^{T}$ as a first‑class data object allows us to embed local linear structure directly into causal discovery.   
+	The result is a sequence of dynamic graphs whose adjacency matrices evolve as a function of the system’s position on the reconstructed manifold.  
+	Such graphs reveal regime shifts, gradual drifts, and transient couplings that static mutual‑information scores inevitably obscure.  
 	
-	Для проверки гипотезы о том, что $\mathbf{X}(t)$ причинно влияет на $\mathbf{Y}(t)$, используют процедуру Convergent Cross Mapping. Вводится теневое вложение:
-	\[
-	M_{X,t} 
-	\;=\;
-	\bigl(X_t,\;X_{t-\tau},\;\dots,\;X_{t-(E-1)\tau}\bigr),
-	\]
-	где $E$ --- размерность вложения, а $\tau$ --- временной лаг. Аналогично задаётся $M_{Y,t}$. Если вектор $M_{X,t}$ хорошо \emph{реконструирует} $\mathbf{Y}_t$, то есть
-	\[
-	\widehat{\mathbf{Y}}_t 
-	\;=\; 
-	\sum_{i=1}^{k} w_i \,\mathbf{Y}_{n_i},
-	\]
-	где $n_i$ --- индексы ближайших соседей $M_{X,t}$ в пространстве $M_X$, то считается, что есть динамическая причинная связь $\mathbf{X}\to \mathbf{Y}$. Значение 
-	\[
-	\rho_{X\to Y}
-	\;=\;
-	\mathrm{corr}\!\Bigl(\{\widehat{\mathbf{Y}}_t\},\{\mathbf{Y}_t\}\Bigr)
-	\]
-	растёт при увеличении размера библиотеки, если $\mathbf{X}\to \mathbf{Y}$ действительно имеет место.
+	The second idea offers a new conceptual perspective by placing causal inference on an information‑geometric footing.  
+	Let $\mathcal M_X$ and $\mathcal M_Y$ denote the statistical manifolds of probability measures on the measurable spaces of $X$ and $Y$, each endowed with the Fisher–Rao metric.  
+	A causal mechanism “$X\!\rightarrow\!Y$’’ is formalised as a Markov kernel $\kappa(y\!\mid\!x)$ that induces the smooth map
+	$$
+	T_\kappa:\mathcal M_X\longrightarrow\mathcal M_Y,\qquad T_\kappa(P_X)=P_X\ast\kappa.
+	$$
+	Causal inference is reframed as estimating $T_\kappa$ or geometric properties from sample data drawn on $(X,Y)$.  
+	Identifiability questions translate into the study of isometric between the two manifolds, while efficiency bounds emerge from comparison of Fisher–information tensors under $T_\kappa$.  
+	This viewpoint unifies potential‑outcome, graphical, and dynamical formulations within a single coordinate‑free framework.  
 	
-	\subsection{Вероятностный метод сходящихся перекрёстных отображений}
+	\section{Conclusion}\label{sec:conclusion}
 	
-	Вместо единственного предсказания $\widehat{\mathbf{Y}}_t$ можно рассматривать \emph{условное распределение} 
-	\[
-	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr),
-	\]
-	оценённое на выборке размера $L$. По аналогии с CCM, ближайшие соседи используются для построения вероятностной аппроксимации:
-	\[
-	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr)
-	\;=\;
-	\sum_{i\in N_L(t)} \alpha_i \,\delta\bigl(\mathbf{Y}-\mathbf{Y}_{n_i}\bigr),
-	\]
-	где $N_L(t)$ --- множество индексов соседей, а $\alpha_i$ --- веса, зависящие от расстояния в $M_X$. Тогда для оценки причинности рассматривают, например, величину
-	\[
-	I_L\bigl(\mathbf{X}\!\to\!\mathbf{Y}\bigr)
-	\;=\;
-	\sum_{t}
-	D_{\mathrm{KL}}\Bigl(
-	p_L\bigl(\mathbf{Y}_t \,\big\vert\, M_{X,t}\bigr) 
-	\;\big\|\;
-	p(\mathbf{Y}_t)
-	\Bigr),
-	\]
-	или аналогичную меру, связанную с \(\mathrm{MI}\) (взаимной информацией). При $L\to\infty$ распределение $p_L(\mathbf{Y}_t|M_{X,t})$ должно сходиться к истинному условному $p(\mathbf{Y}_t|M_{X,t})$, давая более строгую вероятностную трактовку динамических причинных связей.
+	This study revisited the problem of extracting directed, state‑dependent causal links from high‑dimensional, nonlinear and non‑stationary time series.  
+	We proposed a three‑stage pipeline CA-SSR-CCM that projects the data into an interpretable manifold, detects directed influence via topological cross‑mapping, and finally quantifies causal strength in a scale‑invariant manner.  
+	Theoretical analysis established that, under generic observability and faithfulness conditions, the SSR $\rightarrow$ CCM mapping is a diffeomorphism on the true attractor, ensuring that cross‑map skill converges to a non‑spurious measure of directed dependence.  
+	Extensive numerical experiments on synthetic benchmarks, EEG sensor arrays, and fMRI region‑of‑interest networks demonstrated that the revised pipeline outperforms classical Granger and transfer‑entropy baselines.  
+	The framework is readily extensible: S‑map Jacobians can inject explicit time‑varying weights, and an information‑geometric reformulation promises coordinate‑free estimation on statistical manifolds.  
+	Together these developments position the SSR $\rightarrow$ CCM $\rightarrow$ MI pipeline as a robust, interpretable, and theoretically grounded tool for modern causal discovery in dynamical systems.  
+
 	
-	\subsection{Ядерное сглаживание}
-	
-	Для набора $\{M_{X,t}\}_{t=1}^T$ можно ввести эмпирическую плотность с помощью ядерного метода. Пусть $K(\cdot)$ --- некая ядровая функция (напр.\,гауссова):
-	\[
-	\widehat{p}_X(u)
-	\;=\;
-	\frac{1}{T h_X^{m_X}}
-	\sum_{t=1}^T
-	K\!\Bigl(\frac{\|u - M_{X,t}\|}{h_X}\Bigr),
-	\]
-	где $h_X>0$ --- параметр сглаживания, а $m_X=\dim(\mathcal{M}_X)$ --- формальная размерность пространства вложения. Аналогично для $M_{Y,t}$ определяем
-	\[
-	\widehat{p}_Y(v)
-	\;=\;
-	\frac{1}{T h_Y^{m_Y}}
-	\sum_{t=1}^T
-	K\!\Bigl(\frac{\|v - M_{Y,t}\|}{h_Y}\Bigr).
-	\]
-	Таким образом, каждому многообразию $\mathcal{M}_X$ и $\mathcal{M}_Y$ соответствует своя оценка плотности, отражающая эмпирическое распределение вложенных точек.
-	
-	\section{Постановка задачи}
-	
-	Пусть \( \mathbf{X}(t) = \{X_1(t), X_2(t), \ldots, X_{n_x}(t)\} \) и \( \mathbf{Y}(t) = \{Y_1(t), Y_2(t), \ldots, Y_{n_y}(t)\} \) — два набора многомерных временных рядов, наблюдаемых в моменты времени \( t = 1, \ldots, T \). Нас интересует выявление причинных связей между \( \mathbf{X}(t) \) и \( \mathbf{Y}(t) \), т.е. такие пары связей, где переменные из \( \mathbf{X}(t) \) причинно влияют на переменные из \( \mathbf{Y}(t) \), или наоборот.
-	
-	Необходимо определить направленные причинные связи:
-	1. \( X_i(t-\tau) \to Y_j(t) \) для \( i = 1, \ldots, n_x \), \( j = 1, \ldots, n_y \), и лагов \( \tau \geq 0 \),
-	2. \( Y_j(t-\tau) \to X_i(t) \) для \( i = 1, \ldots, n_x \), \( j = 1, \ldots, n_y \), и лагов \( \tau \geq 0 \).
-	
-	Предполагаем, что многомерные временные ряды \( \mathbf{X}(t) \) и \( \mathbf{Y}(t) \) генерируются следующим образом:
-	\[
-	X_i(t) = f_i(\text{Pa}_{X_i}(t), \varepsilon_{X_i}(t)),
-	\]
-	\[
-	Y_j(t) = g_j(\text{Pa}_{Y_j}(t), \varepsilon_{Y_j}(t)),
-	\]
-	где:
-	- \( \text{Pa}_{X_i}(t) \subseteq \{Y_1(t-\tau), \ldots, Y_{n_y}(t-\tau)\} \) — множество родителей переменной \( X_i(t) \) из \( \mathbf{Y} \),
-	- \( \text{Pa}_{Y_j}(t) \subseteq \{X_1(t-\tau), \ldots, X_{n_x}(t-\tau)\} \) — множество родителей переменной \( Y_j(t) \) из \( \mathbf{X} \),
-	- \( f_i \) и \( g_j \) — детерминированные функции, описывающие зависимость,
-	- \( \varepsilon_{X_i}(t) \) и \( \varepsilon_{Y_j}(t) \) — шумовые компоненты.
-	
-	Оптимизационная задача:
-	\[
-	\min_{G_{XY}, G_{YX}} \mathcal{L}(\mathbf{X}, \mathbf{Y} \mid G_{XY}, G_{YX}) + \lambda_1 \mathcal{R}(G_{XY}, G_{YX}) + \lambda_2 \mathcal{T}(G_{XY}, G_{YX}),
-	\]
-	где:
-	- \( G_{XY} \) — граф зависимостей \( X_i \to Y_j \),
-	- \( G_{YX} \) — граф зависимостей \( Y_j \to X_i \),
-	- \( \mathcal{L}(\mathbf{X}, \mathbf{Y} \mid G_{XY}, G_{YX}) \) — правдоподобие наблюдаемых данных с учетом графов \( G_{XY} \) и \( G_{YX} \),
-	- \( \mathcal{R}(G_{XY}, G_{YX}) \) — регуляризатор, штрафующий за сложность графов,
-	- \( \mathcal{T}(G_{XY}, G_{YX}) \) — штраф за избыточную изменчивость графов во времени.
-	
-	\section{Предлагаемый подход}
-	\begin{algorithm}[h!]
-		\caption{Алгоритм вероятностного выявления влияния $\mathbf{X}\to\mathbf{Y}$ на основе ICA и ядерной оценки плотностей}
-		\label{alg:ICA_KDE_Causal}
-		
-		\textbf{Входные данные:}
-		\begin{itemize}
-			\item Набор исходных наблюдений $\{\mathbf{X}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_X}$ (ЭЭГ).
-			\item Набор исходных наблюдений $\{\mathbf{Y}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_Y}$ (ИИМ).
-			\item Параметры: число независимых компонент $r$ для ICA, размерность вложения $E$ и временной лаг $\tau$, ядровые ширины сглаживания $h_X,\,h_Y$.
-		\end{itemize}
-		
-		\textbf{Выходные данные:}
-		\begin{itemize}
-			\item Временной ряд (или процесс) $\{\gamma(t)\}_{t=1}^T$, где
-			\[
-			\gamma(t) = MI(M_{X, t}, M_{Y, t}) 
-			\;=\; 
-			\mathbb{E}_{M_{X, t}} D_{\mathrm{KL}}\Bigl(
-			\widehat{p}\bigl(M_{Y,t}\,\big\vert\,M_{X,t}\bigr)
-			\;\big\|\;
-			\widehat{p}_{Y}\bigl(M_{Y,t}\bigr)
-			\Bigr),
-			\]
-			измеряющий силу влияния $\mathbf{X}\to\mathbf{Y}$ в момент $t$.
-		\end{itemize}
-		
-		\begin{enumerate}
-			\item \textbf{Независимый анализ компонент (ICA).} 
-			
-			\(\displaystyle
-			\mathbf{X}_{\mathrm{raw}}(t) \;=\; A\,\mathbf{S}(t),
-			\quad
-			\mathbf{S}(t)\in \mathbb{R}^{r}, 
-			\quad
-			A\in\mathbb{R}^{d_X \times r}.
-			\)
-			
-			Вычислить оценки независимых компонент:
-			\[
-			\widehat{\mathbf{S}}(t)
-			\;=\;
-			\widehat{A}^{-1}\,
-			\mathbf{X}_{\mathrm{raw}}(t).
-			\]
-			
-			\item \textbf{Построение временных эмбеддингов для \(\mathbf{X}\) и \(\mathbf{Y}\).}
-			
-			Для каждого $t$ сформировать:
-			\[
-			M_{X,t}
-			\;=\;
-			\bigl(\widehat{\mathbf{S}}(t),\,\widehat{\mathbf{S}}(t-\tau),\,\dots,\widehat{\mathbf{S}}(t-(E-1)\tau)\bigr)
-			\;\;\in\;\mathbb{R}^{rE},
-			\]
-			\[
-			M_{Y,t}
-			\;=\;
-			\mathbf{Y}_{\mathrm{raw}}(t)
-			\;\;\in\;\mathbb{R}^{d_Y E}.
-			\]
-			
-			\item \textbf{Ядерная оценка (KDE) для маргинальных плотностей на эмбеддингах.}
-			
-			Определить оценки плотностей:
-			\[
-			\widehat{p}_X(u)
-			\;=\;
-			\frac{1}{T\,h_X^{m_X}}
-			\;\sum_{t=1}^T 
-			K\!\Bigl(\tfrac{\|u - M_{X,t}\|}{h_X}\Bigr),
-			\quad
-			u \in \mathbb{R}^{m_X},
-			\]
-			\[
-			\widehat{p}_Y(v)
-			\;=\;
-			\frac{1}{T\,h_Y^{m_Y}}
-			\;\sum_{t=1}^T 
-			K\!\Bigl(\tfrac{\|v - M_{Y,t}\|}{h_Y}\Bigr),
-			\quad
-			v \in \mathbb{R}^{m_Y},
-			\]
-			где $m_X = rE,\; m_Y = d_Y,$ а $K(\cdot)$ --- ядровая функция.
-			
-			\item \textbf{Агрегация результатов и формирование временного ряда.}
-			
-			Сформировать последовательность
-			\[
-			\gamma(t)
-			\;=\;
-			\mathbb{E}_{M_{X, t}} D_{\mathrm{KL}}\Bigl(
-			\widehat{p}\bigl(M_{Y,t}\,\vert\,M_{X,t}\bigr)
-			\;\big\|\;
-			\widehat{p}_Y\bigl(M_{Y,t}\bigr)
-			\Bigr),
-			\quad t = 1,\dots,T.
-			\]
-		\end{enumerate}
-		
-	\end{algorithm}
-	
+	\addcontentsline{toc}{section}{\protect\numberline{}References}
 	\bibliographystyle{unsrtnat}
 	\bibliography{references.bib}
 	

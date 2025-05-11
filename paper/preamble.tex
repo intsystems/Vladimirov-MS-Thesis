@@ -1,9 +1,6 @@
-\usepackage{arxiv}
-
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[english, russian]{babel}
-% \usepackage{cmap}
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{nicefrac}
@@ -16,23 +13,94 @@
 \usepackage{multicol}
 \usepackage{multirow}
 \usepackage{tabularx}
+\usepackage{tabulary}
+\usepackage{pifont}
+\usepackage{colortbl}
 
 \usepackage{tikz}
 \usetikzlibrary{matrix}
-
 % Algorithms
-\usepackage{algpseudocode}
 \usepackage{algorithm}
-
+\usepackage{algpseudocode}
+\makeatletter
+\renewcommand{\ALG@name}{Алгоритм}
+\makeatother
 %% Шрифты
 \usepackage{euscript} % Шрифт Евклид
 \usepackage{mathrsfs} % Красивый матшрифт
-\usepackage{extsizes} % Возможность сделать 14-й шрифт
-
+% \usepackage{extsizes}
 \usepackage{makecell} % diaghead in a table
 \usepackage{amsmath,amsfonts,amssymb,amsthm,mathtools,dsfont}
 \usepackage{icomma}
 
+\usepackage[center]{titlesec}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{wrapfig}
+\usepackage{caption}
+% \usepackage{subcaption}
+\usepackage{indentfirst}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{stackrel}
+
+\usepackage{hyperref}
+\hypersetup{
+	unicode=true,
+	pdftitle={Generative causal inference approach to BCI analysis},
+	pdfsubject={q-bio.NC, q-bio.QM},
+	pdfauthor={Vladimirov Eduard Anatolevich},
+	pdfkeywords={First keyword, Second keyword, More},
+	colorlinks=true,
+	linkcolor=black,        % внутренние ссылки
+	citecolor=green,        % на библиографию
+	filecolor=magenta,      % на файлы
+	urlcolor=blue           % на URL
+}
+
+\usepackage{enumitem} % Для модификаций перечневых окружений
+\usepackage{etoolbox}
+\expandafter\patchcmd\csname\string\algorithmic\endcsname{\itemsep\z@}{\itemsep=1.5mm}{}{}
+
+\usepackage{geometry}
+\geometry{left=3cm}
+\geometry{right=1.5cm}
+\geometry{top=2.0cm}
+\geometry{bottom=2.0cm}
+\setlength\parindent{1.25cm}    % Устанавливает длину красной строки 15pt
+\linespread{1.3}             % Коэффициент межстрочного интервала
+
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{quotes}
+
+\def\ltrn{\mathcal{L}_{\mathrm{train}}}
+\def\lval{\mathcal{L}_{\mathrm{val}}}
+
+\newcommand\argmin{\mathop{\arg\min}}
+\newcommand{\hchi}{\hat{\boldsymbol{\chi}}}
+\newcommand{\hphi}{\hat{\boldsymbol{\varphi}}}
+\newcommand{\bchi}{\boldsymbol{\chi}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\hx}{\hat{x}}
+\newcommand{\hy}{\hat{y}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\p}{p(\cdot)}
+\newcommand{\q}{q(\cdot)}
+\newcommand{\uu}{\mathbf{u}}
+\newcommand{\vv}{\mathbf{v}}
 \newcommand{\bz}{\mathbf{z}}
 \newcommand{\bx}{\mathbf{x}}
 \newcommand{\by}{\mathbf{y}}
@@ -40,8 +108,12 @@
 \newcommand{\bw}{\mathbf{w}}
 \newcommand{\ba}{\mathbf{a}}
 \newcommand{\bb}{\mathbf{b}}
+\newcommand{\bff}{\mathbf{f}}
+\newcommand{\bh}{\mathbf{h}}
+\newcommand{\bl}{\mathbf{l}}
 \newcommand{\bp}{\mathbf{p}}
 \newcommand{\bq}{\mathbf{q}}
+\newcommand{\bs}{\mathbf{s}}
 \newcommand{\bt}{\mathbf{t}}
 \newcommand{\bu}{\mathbf{u}}
 \newcommand{\bT}{\mathbf{T}}
@@ -59,6 +131,7 @@
 \newcommand{\bC}{\mathbf{C}}
 \newcommand{\bE}{\mathbf{E}}
 \newcommand{\bF}{\mathbf{F}}
+\newcommand{\bsigma}{\boldsymbol{\sigma}}
 \newcommand{\bomega}{\boldsymbol{\omega}}
 \newcommand{\btheta}{\boldsymbol{\theta}}
 \newcommand{\bgamma}{\boldsymbol{\gamma}}
@@ -66,7 +139,7 @@
 \newcommand{\bPsi}{\boldsymbol{\Psi}}
 \newcommand{\bpsi}{\boldsymbol{\psi}}
 \newcommand{\bxi}{\boldsymbol{\xi}}
-\newcommand{\bchi}{\boldsymbol{\chi}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
 \newcommand{\bzeta}{\boldsymbol{\zeta}}
 \newcommand{\blambda}{\boldsymbol{\lambda}}
 \newcommand{\beps}{\boldsymbol{\varepsilon}}
@@ -75,13 +148,12 @@
 \newcommand{\cX}{\mathcal{X}}
 \newcommand{\cY}{\mathcal{Y}}
 \newcommand{\cW}{\mathcal{W}}
-
 \newcommand{\dH}{\mathds{H}}
 \newcommand{\dR}{\mathds{R}}
 % transpose
 \newcommand{\T}{^{\mathsf{T}}}
-
-% \renewcommand{\shorttitle}{\textit{arXiv} Шаблон}
+% command to strike out text
+\newcommand{\stkout}[1]{\ifmmode\text{\sout{\ensuremath{#1}}}\else\sout{#1}\fi}
 \renewcommand{\epsilon}{\ensuremath{\varepsilon}}
 \renewcommand{\phi}{\ensuremath{\varphi}}
 \renewcommand{\kappa}{\ensuremath{\varkappa}}
@@ -90,32 +162,24 @@
 \renewcommand{\ge}{\ensuremath{\geqslant}}
 \renewcommand{\geq}{\ensuremath{\geqslant}}
 \renewcommand{\emptyset}{\varnothing}
+\renewcommand{\baselinestretch}{1}
 
-\usepackage{hyperref}
-% \usepackage[usenames,dvipsnames,svgnames,table,rgb]{xcolor}
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{assumption}[theorem]{Assumption}
 
-\hypersetup{
-	unicode=true,
-	pdftitle={A template for the arxiv style},
-	pdfsubject={q-bio.NC, q-bio.QM},
-	pdfauthor={David S.~Hippocampus, Elias D.~Striatum},
-	pdfkeywords={First keyword, Second keyword, More},
-	colorlinks=true,
-	linkcolor=black,        % внутренние ссылки
-	citecolor=blue,         % на библиографию
-	filecolor=magenta,      % на файлы
-	urlcolor=blue           % на URL
-}
+\newtheorem{Th}{Теорема}
+\newtheorem{Def}{Определение}
+\newenvironment{Proof} % имя окружения
+{\par\noindent{\bf Доказательство.}} % команды для \begin
+{\hfill$\scriptstyle\blacksquare$} % команды для \end
+\newtheorem{Assumption}{Предположение}
+\newtheorem{Corollary}{Следствие}
+\newtheorem{problem}{Problem}
 
 \graphicspath{{../figures/}}
 
-\usepackage{enumitem} % Для модификаций перечневых окружений
-
-\theoremstyle{definition} % "Определение"
-\newtheorem{definition}{Опр.}[section]
-
-\usepackage{etoolbox}
-
-\makeatletter
-\expandafter\patchcmd\csname\string\algorithmic\endcsname{\itemsep\z@}{\itemsep=1.5mm}{}{}
-\makeatother
+\renewcommand{\abstractname}{Аннотация}
