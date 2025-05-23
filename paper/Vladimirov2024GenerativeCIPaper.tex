@@ -627,7 +627,16 @@
 
 
 	\section{Computational experiment}
-	TODO
+	Note that since we can't receive a true causal graph, the task of evaluating causal inference method becomes more sophisticated.
+	One way to solve it is to compare the quality of one component's prediction based on causal parents.
+	Since we're working with table tennis dataset, I suggest to consider a task of paddle hit classification (succesful, neutral or failure) as a benchmark for causal discovery methods.
+	
+	Plan:
+	\begin{itemize}
+		\item Generate synthetic EEG dataset, consider causal discovery as a binary classification problem, compare F1 score
+		\item Check that extracted causal components improve the quality of the model, which predicts whether the hit was successful, neutral or failure.
+		\item Check that the more tennis skills the player has the stronger concentration/causal link between motor cortex and frontal lobe.
+	\end{itemize}
 	
 	\section{Error analysis}
 	TODO
