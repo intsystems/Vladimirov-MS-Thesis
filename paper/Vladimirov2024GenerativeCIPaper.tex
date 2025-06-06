@@ -1,3 +1,4 @@
+
 \documentclass[14pt]{extarticle}
 
 \input{preamble}
@@ -11,14 +12,14 @@
 	\newpage
 	
 	\begin{center}
-		\Large{\textbf{Аннотация}}
+		\Large{\textbf{Annotation}}
 	\end{center}
 	
 	\begin{abstract}
 		Learning low–dimensional representations that preserve cause–and–effect structure is a key step toward interpretable modelling of high-dimensional dynamical data.
-		This thesis introduces \textbf{PureCCA}, a linear auto-encoder that splits the latent space into a causal block, capturing delayed directed influence from one multivariate series to another, and a reconstructive block, keeping residual variance.  
+		This thesis introduces \textbf{CaSCA}, a linear auto-encoder that splits the latent space into a causal block, capturing delayed directed influence from one multivariate series to another, and a reconstructive block, keeping residual variance.  
 		Extensions to trajectory embeddings, Riemannian covariance spaces, and a deep variant with a differentiable Convergent Cross Mapping loss broaden the framework.  
-		Comprehensive experiments on two real-world datasets—dual accelerometer-gyroscope recordings and EEG–IMU traces of table-tennis sessions—show that PureCCA  
+		Comprehensive experiments on two real-world datasets—dual accelerometer-gyroscope recordings and EEG–IMU traces of table-tennis sessions—show that CaSCA  
 		(i) reduces multicollinearity,  
 		(ii) reconstructs signals with negligible loss of explained variance, and  
 		(iii) improves downstream prediction
@@ -37,29 +38,29 @@
 	Classic tools such as linear Granger causality \citep{Granger1969} and transfer entropy \citep{Schreiber2000} check whether past values of one series improve the prediction of another.  
 	Yet they operate in the raw measurement space, assume fixed linear effects, and struggle when high dimensionality, nonlinear coupling, or evolving dynamics hide the signal in noise.  
 	These limitations lead to ``mirage correlations’’ that appear and vanish with changing regimes \citep{Sugihara2012}, while the curse of dimensionality dilutes statistical power in large sensor arrays \citep{Runge2019}
-	   
+	
 	A growing body of work therefore shifts attention from \emph{discovery in the original space} to \emph{learning a low-dimensional state space} in which causal relations become tractable.  
 	State–space reconstruction unfolds the attractor of a dynamical system so that nearby points share similar futures, providing a geometrically faithful arena for causal tests.  
 	Recent advances in causal representation learning \citep{Scholkopf2021} confirm that suitable embeddings can disentangle latent drivers and thus sharpen downstream inference.  
 	
-	Building on these ideas we propose \emph{PureCCA}, a family of causal dimensionality-reduction methods that balance the variance-preserving objective of PCA with the cross-predictive focus of CCA.  
-	The key hypothesis is that causal influence is concentrated in a subspace of the hidden state and that separating this \emph{causal} subspace from a purely \emph{reconstructive} subspace yields more interpretable and more predictive models.  
-	PureCCA retains essential dynamical variance and explicitly tests whether the extracted causal coordinates improve auto-regressive prediction of target variables.  
+	Building on these ideas we propose \textbf{CaSCA} ~--- Causal Subspace Canonical Analysis ~--- a family of causal dimensionality-reduction methods that balance the variance-preserving objective of PCA with the cross-predictive focus of CCA.  
+	The key hypothesis is that causal influence is concentrated in a subspace of the hidden state and that separating this \emph{causal} subspace from a purely \emph{reconstructive} subspace yields more interpretable and predictive models.  
+	CaSCA retains essential dynamical variance and explicitly tests whether the extracted causal coordinates improve auto-regressive prediction of target variables.  
 	Three complementary quality criteria guide the evaluation: variance-inflation metrics for collinearity, reconstruction error for information retention, and forecast skill for causal utility.  
 	
-	We demonstrate PureCCA on two time-series settings of increasing complexity.  
+	We demonstrate CaSCA on two time-series settings of increasing complexity.  
 	First, ten-minute accelerometer–gyroscope recordings from two wearable devices illustrate how shared latent dynamics can be captured by a few causal components that transfer across sensors.  
-	Second, EEG–IMU recordings of table-tennis players show that Riemannian trajectory embeddings coupled with PureCCA improve the classification of successful versus failed hits.  
+	Second, EEG–IMU recordings of table-tennis players show that Riemannian trajectory embeddings coupled with CaSCA improve the classification of successful versus failed hits.  
 	Across both cases we compare causality assessed in the original space with causality assessed in the learned state space and find consistent gains in interpretability and predictive power.  
 	
-	To extend PureCCA beyond linear projections we outline two modifications.  
+	To extend CaSCA beyond linear projections we outline two modifications.  
 	Working in \emph{trajectory space} embeds lagged blocks instead of instantaneous samples, capturing delayed effects without exponential parameter growth.  
 	A \emph{Riemannian variant} projects covariance trajectories onto the manifold of symmetric positive-definite matrices, respecting the intrinsic geometry of neural data.  
 	Finally, we sketch a deep learning extension in which a cross-attention encoder replaces linear CCA and a differentiable Convergent Cross Mapping loss imposes monotonic cross-map convergence during training.  
 	
 	The contributions of this thesis are fourfold.  
 	First, we formalise causal dimensionality reduction as the joint optimisation of reconstruction and cross-predictive objectives.  
-	Second, we introduce PureCCA and prove that, under generic observability and weak-noise conditions, its causal subspace recovers the true latent drivers up to rotation.  
+	Second, we introduce CaSCA and prove that, under generic observability and weak-noise conditions, its causal subspace recovers the true latent drivers up to rotation.  
 	Third, we provide empirical evidence that causal analysis in the learned state space outperforms traditional pipelines in both explanatory clarity and forecasting accuracy.  
 	Fourth, we deliver open-source implementations that support linear, Riemannian, and neural variants of the framework.  
 	
@@ -67,7 +68,7 @@
 	Section~\ref{sec:causal-dim-red} reviews causal representation learning and dimensionality-reduction methods.  
 	Section~\ref{sec:ssr} surveys state-space reconstruction techniques that motivate our choice of embedding.  
 	Section~\ref{sec:problem} formulates the problem and introduces the evaluation criteria.  
-	Section~\ref{sec:purecca} details the PureCCA algorithm.  
+	Section~\ref{sec:purecca} details the CaSCA algorithm.  
 	Section~\ref{sec:mods} presents the trajectory-space, Riemannian, and deep extensions.  
 	Section~\ref{sec:experiments} reports computational experiments on the wearable and EEG–IMU datasets.  
 	Section~\ref{sec:future} outlines future directions, and Section~\ref{sec:conclusion} concludes.  
@@ -145,9 +146,9 @@
 	
 	Over the past thirty years, methods have evolved from simple linear models that work under strict assumptions to complex deep‐learning approaches that need a lot of data and conditions to hold.  
 	Linear mixture methods use non‐Gaussian signals to find causes, supervised projections like PCA/CCA keep information relevant to a target, time‐series algorithms use the order of events, and neural networks can learn rich causal features if given data from different settings.  
-	Our method, \textbf{PureCCA}, sits in the middle: it uses straightforward PCA/CCA ideas but forces the chosen components to capture causal relationships and make good predictions with time lags.  
+	Our method, \textbf{CaSCA}, sits in the middle: it uses straightforward PCA/CCA ideas but forces the chosen components to capture causal relationships and make good predictions with time lags.  
 	In this way, it aims to produce a low‐dimensional representation that is easy to understand and still preserves the true causal links, without relying on overly restrictive assumptions.  
-
+	
 	\subsection{State Space Reconstruction}\label{sec:ssr}
 	
 	\textbf{State-space reconstruction (SSR)} refers to the process of constructing a multi-dimensional phase space from time-series data such that the dynamics of an unknown system can be studied in that space. 
@@ -240,8 +241,8 @@
 	
 	Traditional methods like time‐delay embedding and singular spectrum analysis let us rebuild the system’s attractor from a single observed variable so that the hidden dynamics become explicit.  
 	Modern techniques add flexibility: nonlinear manifold learning finds lower‐dimensional coordinates that keep the attractor’s shape, while Riemannian methods use covariance or subspace geometry to compare complex states.  
-	PureCCA relies on these reconstructed state spaces to extract a small set of components that capture causal influence, since working in the state domain makes cause‐and‐effect links easier to separate than in the raw measurement space.  
-	Each SSR approach has its own assumptions, benefits, and drawbacks (see Table \ref{tab:ssr_selected}). In practice, we choose the one that best reveals the latent dynamics before applying PureCCA.
+	CaSCA relies on these reconstructed state spaces to extract a small set of components that capture causal influence, since working in the state domain makes cause‐and‐effect links easier to separate than in the raw measurement space.  
+	Each SSR approach has its own assumptions, benefits, and drawbacks (see Table \ref{tab:ssr_selected}). In practice, we choose the one that best reveals the latent dynamics before applying CaSCA.
 	
 	\begin{table}[bhtp]
 		\centering
@@ -366,11 +367,11 @@
 		$\tau \in \{0,1,\dots,\tau_{\max}\}$ that lets us detect after how many steps $\bX_{t - \tau}$ influences $\bY_t$;
 		\item $\lambda_{\mathrm{rec}}, \; \lambda_{\mathrm{c}}>0$ balance reconstruction quality and causal fit.
 	\end{itemize}
-
+	
 	As a result of this optimization, we obtain
 	$\mathbf P_t^{\mathrm c}, \mathbf Q_t^{\mathrm c}$ — low-dimensional causal embeddings, and 
 	$\widehat{\bX_t}, \widehat{\bY_t}$ — accurate reconstructions of the original signals.
-
+	
 	\paragraph{Constraints.}
 	\begin{itemize}[nosep,leftmargin=1.2cm]
 		\item The attractor is assumed to admit a delayed embedding under moderate noise.
@@ -434,9 +435,9 @@
 	of the original observables, thus validating the utility of causal embeddings.
 	
 	
-	\section{Suggested Method PureCCA} \label{sec:purecca}
+	\section{Suggested Method CaSCA} \label{sec:purecca}
 	
-	PureCCA is a linear two–block encoder–decoder that separates a pair of
+	CaSCA is a linear two–block encoder–decoder that separates a pair of
 	multivariate time–series \(\{\bX_t ,\bY_t\}_{t=1}^{T}\) into
 	\emph{causal coordinates}, responsible for the directed lagged influence
 	\(\bX_{t-\tau}\!\to\bY_t\), and \emph{reconstructive coordinates}, which
@@ -489,7 +490,7 @@
 	\end{enumerate}
 	
 	\subsection*{Reconstruction part}
-
+	
 	\begin{enumerate}[leftmargin=1.4cm,label=(R\arabic*)]
 		\item
 		Apply PCA with \(d_{\mathrm r}=m-d_{\mathrm c}\) components to each
@@ -536,7 +537,7 @@
 	X\!\in\!\R^{T\times n_x},\;
 	\Sigma_{xx}=\frac{1}{T}X^{\top}X = I_{n_x}
 	\].
-	PureCCA returns two orthonormal loading sets  
+	CaSCA returns two orthonormal loading sets  
 	\(W_x^{\mathrm c}\in\R^{n_x\times d_{\mathrm c}}\)  
 	and \(W_x^{\mathrm r}\in\R^{n_x\times d_{\mathrm r}}\)
 	with \(d_{\mathrm c}+d_{\mathrm r}=d_{\mathrm hid}\).
@@ -583,7 +584,7 @@
 	\]
 	
 	%------------------  THEOREM  ---------------------
-	\begin{theorem}[PureCCA Euclidean block structure]
+	\begin{theorem}[CaSCA Euclidean block structure]
 		\label{thm:orth_blocks}
 		In the whitened space the following hold.
 		\begin{enumerate}[label=(\roman*)]
@@ -625,7 +626,7 @@
 	\end{Proof}
 	
 	The theorem confirms that, after whitening (or equivalently using a
-	$\Sigma$-aware projector), PureCCA splits the total variance into two
+	$\Sigma$-aware projector), CaSCA splits the total variance into two
 	independent, orthogonal blocks.
 	The reconstruction follows directly:
 	\[
@@ -647,15 +648,15 @@
 	
 	\bigskip
 	\noindent
-	PureCCA therefore delivers a compact latent representation with (i) an
+	CaSCA therefore delivers a compact latent representation with (i) an
 	automatically chosen causal delay, (ii) an interpretable split between
 	directed and residual variance, and (iii) provable orthogonality after a
 	single, inexpensive whitening step.
-
-	\section{Modifications} \label{sec:mods}
-	\subsection{PureCCA in a Takens–trajectory space}\label{subsec:purecca-traj}
 	
-	The linear formulation of \textsc{PureCCA} operates on the raw sensor
+	\section{Modifications} \label{sec:mods}
+	\subsection{CaSCA in a Takens–trajectory space}\label{subsec:purecca-traj}
+	
+	The linear formulation of \textsc{CaSCA} operates on the raw sensor
 	vectors $\bx_t\in\R^{n_x}$ and $\by_t\in\R^{n_y}$.  
 	When the underlying dynamics are nonlinear, however, those vectors
 	represent only low–dimensional projections of a larger deterministic
@@ -686,14 +687,14 @@
 	the dynamics.
 	
 	\paragraph{Two ways to build causal coordinates.}
-	The delay embedding can be combined with \textsc{PureCCA} in two
+	The delay embedding can be combined with \textsc{CaSCA} in two
 	conceptually different orders, summarised in
 	Fig.~\ref{fig:purecca-delay-schemes}.
 	
 	\begin{enumerate}[label=\textbf{Schema \roman*.}]
-		\item \emph{Delay--then–CCA (state-space PureCCA).}  
+		\item \emph{Delay--then–CCA (state-space CaSCA).}  
 		First lift the raw data to $\bigl(\widehat{\bX}_t,\widehat{\bY}_t\bigr)$,
-		then apply the PureCCA routine of Section~\ref{sec:purecca}.  
+		then apply the CaSCA routine of Section~\ref{sec:purecca}.  
 		The causal loadings $(\bW_x^{\mathrm c},\bW_y^{\mathrm c})$ now
 		operate on entire trajectories, so each latent coordinate
 		$P_t^{\mathrm c}$ integrates information from \emph{multiple} recent
@@ -703,7 +704,7 @@
 		the CCA step and often yields more parsimonious causal blocks.
 		
 		\item \emph{CCA--then–delay (original-space causal $\Rightarrow$ delayed covariates).}  
-		Run PureCCA on $(\bX_t,\bY_t)$ as usual, obtain the
+		Run CaSCA on $(\bX_t,\bY_t)$ as usual, obtain the
 		instantaneous causal scores $P_t^{\mathrm c}$, and only \emph{then}
 		augment the regression–feature matrix with their delayed copies
 		$\bigl\{P_{t-\tau}^{\mathrm c}\bigr\}_{\tau\le q-1}$.  
@@ -720,7 +721,7 @@
 			\matrix[column sep=13mm,row sep=6mm]{
 				\node (rawX)   {$\bX_t$}; & \node (rawY) {$\bY_t$}; \\
 				& \node (delayY) {$\widehat{\bY}_t$}; \\
-				\node (delayX) {$\widehat{\bX}_t$}; & \node (cca) {PureCCA}; \\
+				\node (delayX) {$\widehat{\bX}_t$}; & \node (cca) {CaSCA}; \\
 				& \node (PcQ) {$\bigl(P_t^{\mathrm c},Q_t^{\mathrm c}\bigr)$}; \\
 			};
 			\draw[->] (rawX) -- (delayX) node[midway,left]{delay};
@@ -734,7 +735,7 @@
 		\begin{tikzpicture}[>=Stealth,scale=.95]
 			\matrix[column sep=13mm,row sep=6mm]{
 				\node (rawX2) {$\bX_t$}; & \node (rawY2) {$\bY_t$}; \\
-				& \node (cca2) {PureCCA}; \\
+				& \node (cca2) {CaSCA}; \\
 				\node (Pc) {$P_t^{\mathrm c}$}; & \node (delayPc) {$\widehat P_t^{\mathrm c}$}; \\
 			};
 			\draw[->] (rawX2) -- (cca2);
@@ -744,7 +745,7 @@
 			\node[right=25mm of cca2]{Scheme\,\textbf{ii}: CCA $\Rightarrow$ delay};
 		\end{tikzpicture}
 		\caption{Two integration orders of time-delay embedding and
-			\textsc{PureCCA}.  Colours match the discussion in
+			\textsc{CaSCA}.  Colours match the discussion in
 			Section~\ref{subsec:purecca-traj}.}
 		\label{fig:purecca-delay-schemes}
 	\end{figure}
@@ -781,7 +782,7 @@
 	
 	The raw EEG in the EEG–IMU study comprises $N \approx\ 150$ scalp channels sampled at 250 Hz.
 	Directly feeding these high–dimensional, noisy signals to
-	\textsc{PureCCA} is inefficient and breaks the smooth–manifold
+	\textsc{CaSCA} is inefficient and breaks the smooth–manifold
 	assumptions reviewed in \ref{sec:ssr}.  
 	Instead we first map each short time-window to a single point on the manifold of symmetric positive-definite (SPD) matrices and then
 	linearise that manifold in a tangent space; the entire procedure is
@@ -846,7 +847,7 @@
 	pairwise Euclidean distances in the tangent space approximate true
 	Riemannian distances between covariances.
 	
-	\paragraph{Step 4: \textsc{PureCCA} in the tangent space.}
+	\paragraph{Step 4: \textsc{CaSCA} in the tangent space.}
 	Finally we run the standard pipeline on
 	$\bigl(\bz_t,\ \mathbf y_t\bigr)$, where $\mathbf y_t$ are the
 	co-registered IMU features.  All algebra of
@@ -866,7 +867,7 @@
 	$\mathrm{SPD}(n)$ manifold in a single tangent space.
 	This sequence of geometrically principled steps converts noisy,
 	high–dimensional EEG windows into a smooth Euclidean signal on which
-	\textsc{PureCCA} can safely separate \emph{causal} and
+	\textsc{CaSCA} can safely separate \emph{causal} and
 	\emph{reconstructive} directions.
 	
 	\subsection{Deep-learning extension}
@@ -996,15 +997,15 @@
 	e.g.\ \(-\operatorname{corr}(\bZ_{t-\tau}^{\mathrm c},\bW_t^{\mathrm c})\)
 	(Alvarez‐Melis \& Fusi, 2022).
 	Setting \(\lambda_{\mathrm{rec}},\lambda_{\mathrm{c}}\) identical to the
-	linear case recovers \textsc{PureCCA} in the limit of one head and
+	linear case recovers \textsc{CaSCA} in the limit of one head and
 	identity activations.
 	
 	\paragraph{Summary.}
-	Replacing the CCA core of \textsc{PureCCA} with cross- / self-attention
+	Replacing the CCA core of \textsc{CaSCA} with cross- / self-attention
 	retains the two-sided latent split, inherits linear guarantees
 	(Theorem~\ref{thm:attn_cca}) in the whitened regime, and unlocks the
 	expressive power of deep networks.
-	This \emph{Deep PureCCA} is therefore suited to highly nonlinear data
+	This \emph{Deep CaSCA} is therefore suited to highly nonlinear data
 	such as raw EEG, speech–vision pairs, or multi-sensor IMU streams while
 	staying conceptually aligned with the causal representation principles
 	laid out in Sections \ref{sec:purecca}–\ref{sec:ssr}.
@@ -1096,7 +1097,7 @@
 	
 	\paragraph{Full training loop.}
 	\begin{enumerate}[leftmargin=1.5em,noitemsep]
-		\item \textsc{PureCCA} initialisation  
+		\item \textsc{CaSCA} initialisation  
 		$\Rightarrow$ causal / residual weights
 		$W_x^{\mathrm c},W_y^{\mathrm c},W_x^{\mathrm r},W_y^{\mathrm r}$.
 		\item For each epoch $l=L_{\min},\dots,L_{\max}$  
@@ -1143,7 +1144,7 @@
 		\item Check that the more tennis skills the player has the stronger concentration/causal link between motor cortex and frontal lobe.
 	\end{itemize}
 	
-
+	
 	\section{Future Directions} \label{sec:future}
 	
 	The next stage of my research concentrates on two complementary ideas.  
@@ -1166,13 +1167,13 @@
 	
 	\section{Conclusion} \label{sec:conclusion}
 	
-	This work re-examined causal analysis through the lens of dimensionality reduction and proposed \textbf{PureCCA}: a two-block linear pipeline that first pinpoints lag-specific directions carrying predictive information from one multivariate signal to another, then compresses the residual variance into an orthogonal reconstructive basis.  
-	By combining a grid search of shifted canonical-correlation pairs with exact Euclidean deflation, PureCCA guarantees that its causal and reconstructive loadings are mutually orthogonal once the data are whitened, yielding a clean block decomposition of the sample covariance and eliminating multicollinearity in downstream regressions.  
+	This work re-examined causal analysis through the lens of dimensionality reduction and proposed \textbf{CaSCA}: a two-block linear pipeline that first pinpoints lag-specific directions carrying predictive information from one multivariate signal to another, then compresses the residual variance into an orthogonal reconstructive basis.  
+	By combining a grid search of shifted canonical-correlation pairs with exact Euclidean deflation, CaSCA guarantees that its causal and reconstructive loadings are mutually orthogonal once the data are whitened, yielding a clean block decomposition of the sample covariance and eliminating multicollinearity in downstream regressions.  
 	We formalised these properties in a compact lemma–theorem package, showed how the latent scores reconstitute the original observations without overlap, and introduced three evaluation criteria—variance-inflation, reconstruction error, and predictive gain—that collectively diagnose whether a learned representation is both interpretable and useful.  
 	Experiments on synthetic benchmarks, dual-sensor inertial recordings, and EEG–IMU data confirmed the method’s practical value: a small causal block consistently improved one-step forecasting and tennis-hit classification over baselines that operated either in the raw space or with unsupervised PCA/CCA.  
 	The study also sketched extensions to trajectory embeddings, Riemannian manifolds, and a deep variant with a Convergent Cross-Mapping loss, suggesting a seamless upgrade path from linear algebra to modern representation learning.  
-	Taken together, these contributions position PureCCA as a concise, theoretically grounded, and empirically effective foundation for future research in causal representation learning and state-space causal discovery.
-
+	Taken together, these contributions position CaSCA as a concise, theoretically grounded, and empirically effective foundation for future research in causal representation learning and state-space causal discovery.
+	
 	
 	\addcontentsline{toc}{section}{\protect\numberline{}References}
 	\bibliographystyle{unsrtnat}
