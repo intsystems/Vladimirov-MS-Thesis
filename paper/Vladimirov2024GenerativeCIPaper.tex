@@ -15,14 +15,17 @@
 	\end{center}
 	
 	\begin{abstract}
-		Causal discovery from high-dimensional, nonlinear time series is fundamental for extracting mechanistic insight and guiding interventions in fields ranging from systems neuroscience to climate science.  
-		Classical frameworks such as Granger causality or transfer entropy struggle with latent mixtures, state-dependent dynamics, and the curse of dimensionality.  
-		We introduce \emph{Causal Analysis via Independent Components and State–Space Reconstruction} (CAICSSR), a three-stage pipeline that (i) separates latent sources by non-Gaussian independent component analysis, (ii) reconstructs their attractors with data-adaptive state-space embeddings, and (iii) quantifies directed influence via mutual-information estimators.  
-		Applications to whole-brain fMRI and multi-channel EEG-IMU reveal interpretable causal circuits consistent with neurophysiological literature.  
-		CAICSSR thus provides a principled, scalable framework for latent-space causal discovery and effect quantification in modern time-series data.
+		Learning low–dimensional representations that preserve cause–and–effect structure is a key step toward interpretable modelling of high-dimensional dynamical data.
+		This thesis introduces \textbf{PureCCA}, a linear auto-encoder that splits the latent space into a causal block, capturing delayed directed influence from one multivariate series to another, and a reconstructive block, keeping residual variance.  
+		Extensions to trajectory embeddings, Riemannian covariance spaces, and a deep variant with a differentiable Convergent Cross Mapping loss broaden the framework.  
+		Comprehensive experiments on two real-world datasets—dual accelerometer-gyroscope recordings and EEG–IMU traces of table-tennis sessions—show that PureCCA  
+		(i) reduces multicollinearity,  
+		(ii) reconstructs signals with negligible loss of explained variance, and  
+		(iii) improves downstream prediction
+		The method thus offers a compact, interpretable state-space where causal links are easier to detect and exploit.
 		
 		\bigskip
-		\textbf{Keywords}: \emph{causal discovery, causal inference, EEG, IMU, independent component analysis, convergent cross mapping, mutual information}
+		\textbf{Keywords}: \emph{dimensionality reduction, causal representation learning, canonical correlation analysis, state space reconstruction, EEG, IMU, Riemannian geometry, convergent cross mapping}
 	\end{abstract}
 	
 	\newpage
@@ -30,178 +33,121 @@
 	\section{Introduction}
 	
 	Identifying directed causal links among components of a dynamical system is central to many scientific domains, such as neuroscience, climate science, and economics. [TODO: add references].
-	Learning causal links helps us understand how a system works, not just how its pieces are related.  
-	It also lets us predict the effect of any intervention or change.  
-	In medicine, for example, knowing which brain regions drive others can guide treatment.  
-	In climate studies, causal maps reveal how sea temperature shifts lead to weather changes.  
-	In business, causal links show how one strategy affects various outcomes.  
-	
-	Most existing methods use simple linear models or information‐theory measures to test if one series improves the prediction of another \citep{Granger1969,Schreiber2000}.  
-	They often assume that relationships stay the same over time and that data follow linear patterns.  
-	In practice, real data are rarely this simple.  
-	Systems usually show nonlinear behavior, where the strength or sign of a link can flip as conditions change.  
-	Such “mirage correlations” can mislead linear methods.
+	True understanding requires more than correlation: one needs a representation that makes causal mechanisms explicit and testable.  
+	Classic tools such as linear Granger causality \citep{Granger1969} and transfer entropy \citep{Schreiber2000} check whether past values of one series improve the prediction of another.  
+	Yet they operate in the raw measurement space, assume fixed linear effects, and struggle when high dimensionality, nonlinear coupling, or evolving dynamics hide the signal in noise.  
+	These limitations lead to ``mirage correlations’’ that appear and vanish with changing regimes \citep{Sugihara2012}, while the curse of dimensionality dilutes statistical power in large sensor arrays \citep{Runge2019}
 	   
-	However, these methods face substantial challenges including nonlinearity and state dependence, which give rise to “mirage correlations” \citep{Sugihara2012}.  
-	High dimensionality further limits power (the “curse of dimensionality” \citep{Runge2019}).  
+	A growing body of work therefore shifts attention from \emph{discovery in the original space} to \emph{learning a low-dimensional state space} in which causal relations become tractable.  
+	State–space reconstruction unfolds the attractor of a dynamical system so that nearby points share similar futures, providing a geometrically faithful arena for causal tests.  
+	Recent advances in causal representation learning \citep{Scholkopf2021} confirm that suitable embeddings can disentangle latent drivers and thus sharpen downstream inference.  
 	
-	Causal discovery can yield insights directly from raw data by examining the structure of a causal graph.  
-	In neuroscience, many studies apply causal discovery to whole-brain fMRI datasets with the goal of studying brain mechanisms.  
-	Causal discovery also serves as a preliminary step for causal inference by estimating the strength of causal links prior to intervention-based analysis.  
-	Finally, discovered causal information can enhance downstream tasks such as emotion recognition using Granger-causality features \citep{ExampleEmotion2019}.  
+	Building on these ideas we propose \emph{PureCCA}, a family of causal dimensionality-reduction methods that balance the variance-preserving objective of PCA with the cross-predictive focus of CCA.  
+	The key hypothesis is that causal influence is concentrated in a subspace of the hidden state and that separating this \emph{causal} subspace from a purely \emph{reconstructive} subspace yields more interpretable and more predictive models.  
+	PureCCA retains essential dynamical variance and explicitly tests whether the extracted causal coordinates improve auto-regressive prediction of target variables.  
+	Three complementary quality criteria guide the evaluation: variance-inflation metrics for collinearity, reconstruction error for information retention, and forecast skill for causal utility.  
 	
-	To overcome the limitations of classical approaches, we introduce \emph{Causal Analysis via State‑Space Reconstruction, Convergent Cross Mapping, and Mutual Information} (CA‑SSR‑CCM), a streamlined three‑stage framework.  
-	First, state‑space reconstruction projects the raw observations onto an unfolded attractor where geometrical relationships between variables are directly interpretable.  
-	Working in this manifold eliminates many of the projection artefacts that confound causal tests in the original measurement space.  
-	Second, convergent cross mapping (CCM) exploits the diffeomorphic correspondence between reconstructed manifolds to identify directed dependencies without assuming linear dynamics or stationarity.  
-	Third, conditional mutual information quantifies the strength of each detected link, yielding a scale‑invariant, distribution‑free measure of influence.  
-	CA‑SSR‑CCM remains effective when signals are mixed, variables are numerous, and coupling strengths change with time, because discovery and scoring operate on low‑dimensional state coordinates rather than on high‑dimensional observables.  
-	Optional dimensionality‑reduction steps, such as independent component analysis, can be inserted into the reconstruction phase to enhance interpretability but are not required for consistency.  
+	We demonstrate PureCCA on two time-series settings of increasing complexity.  
+	First, ten-minute accelerometer–gyroscope recordings from two wearable devices illustrate how shared latent dynamics can be captured by a few causal components that transfer across sensors.  
+	Second, EEG–IMU recordings of table-tennis players show that Riemannian trajectory embeddings coupled with PureCCA improve the classification of successful versus failed hits.  
+	Across both cases we compare causality assessed in the original space with causality assessed in the learned state space and find consistent gains in interpretability and predictive power.  
 	
-	In this thesis we establish the theoretical foundations of CA‑SSR‑CCM, proving identifiability under generic observability and weak‑noise conditions and extending Takens’ embedding theorem to the proposed causal pipeline.  
-	We benchmark the method on synthetic systems that are high‑dimensional, nonlinear, and time varying, and we demonstrate its practical value on multichannel EEG data for brain‑connectivity analysis. 
+	To extend PureCCA beyond linear projections we outline two modifications.  
+	Working in \emph{trajectory space} embeds lagged blocks instead of instantaneous samples, capturing delayed effects without exponential parameter growth.  
+	A \emph{Riemannian variant} projects covariance trajectories onto the manifold of symmetric positive-definite matrices, respecting the intrinsic geometry of neural data.  
+	Finally, we sketch a deep learning extension in which a cross-attention encoder replaces linear CCA and a differentiable Convergent Cross Mapping loss imposes monotonic cross-map convergence during training.  
 	
-	The thesis is structured as follows.  
-	Chapter~2 reviews existing causal discovery and inference methods and their limitations.  
-	Chapter~3 details ICA-based latent-space extraction and identifiability guarantees.  
-	Chapter~4 presents state-space reconstruction techniques and parameter selection.  
-	Chapter~5 introduces mutual-information estimators for causal-strength quantification.  
-	Chapter~6 provides empirical validation on simulated and real datasets.  
-	Chapter~7 discusses extensions to time-varying networks and future directions.  
+	The contributions of this thesis are fourfold.  
+	First, we formalise causal dimensionality reduction as the joint optimisation of reconstruction and cross-predictive objectives.  
+	Second, we introduce PureCCA and prove that, under generic observability and weak-noise conditions, its causal subspace recovers the true latent drivers up to rotation.  
+	Third, we provide empirical evidence that causal analysis in the learned state space outperforms traditional pipelines in both explanatory clarity and forecasting accuracy.  
+	Fourth, we deliver open-source implementations that support linear, Riemannian, and neural variants of the framework.  
+	
+	The remainder of the thesis is organised as follows.  
+	Section~\ref{sec:causal-dim-red} reviews causal representation learning and dimensionality-reduction methods.  
+	Section~\ref{sec:ssr} surveys state-space reconstruction techniques that motivate our choice of embedding.  
+	Section~\ref{sec:problem} formulates the problem and introduces the evaluation criteria.  
+	Section~\ref{sec:purecca} details the PureCCA algorithm.  
+	Section~\ref{sec:mods} presents the trajectory-space, Riemannian, and deep extensions.  
+	Section~\ref{sec:experiments} reports computational experiments on the wearable and EEG–IMU datasets.  
+	Section~\ref{sec:future} outlines future directions, and Section~\ref{sec:conclusion} concludes.  
 	
 	\section{Literature review}
 	
-	\subsection{Causal analysis}
+	\subsection{Causal Representation Learning} \label{sec:causal-dim-red}
+	High–dimensional observations rarely reveal causal structure directly.  
+	Causal representation learning therefore seeks a mapping
+	\[
+	R:\;\dR^{p} \longrightarrow \dR^{d},
+	\qquad d\ll p,
+	\]
+	such that the image coordinates preserve the mechanisms that generate the data.  
+	The central difficulty is identifiability: many maps can reconstruct the observations, but only a few (sometimes only one) respect the underlying cause–effect relations.  
+	This section reviews the main methodological lines that have attacked that challenge.
 	
-	\subsubsection{Assumptions}\label{subsubsec:causal_assumptions}
+	\subsubsection*{Linear mixture models}
 	
-	Robust inference of a time-lagged causal network from purely observational time–series data rests on a small set of structural assumptions that bridge the observable statistical world with the (unobserved) interventionist causal world.  In the framework adopted by Runge (2018) these assumptions—time-order, causal sufficiency, the causal Markov condition, and faithfulness—form the logical foundation for consistency of conditional-independence-based discovery algorithms. We recapitulate each assumption formally, introducing the necessary notation along the way.  
+	The earliest identifiable setting assumes each observable is an instantaneous linear mixture of statistically independent, non-Gaussian “sources’’  
+	\[
+	\mathbf{x} = A \,\mathbf{s}, \qquad A \in \dR^{p\times p}.
+	\]
+	Higher–order statistics pin down $A^{-1}$ up to scaling and permutation; ICA algorithms exploit this fact to produce latent candidates for causal factors.  
+	LiNGAM \citep{Shimizu2006} embeds ICA inside a linear, acyclic Structural Equation Model (SEM), rewriting the mixture as  
+	\[
+	\mathbf{x}=B^{\top}\mathbf{x}+\boldsymbol\varepsilon,
+	\]
+	where the upper–triangular weight matrix $B$ encodes directed edges and $\boldsymbol\varepsilon$ is i.i.d.\ non-Gaussian noise.  
+	Because the permutation freedom in ICA coincides with the causal ordering, the full DAG becomes identifiable.  
+	\textsc{DirectLiNGAM} \citep{Shimizu2011} replaces the iterative ICA step with a deterministic finite-search procedure, making the approach computationally robust.
 	
-	\paragraph*{Notation.}
-	Let $\mathbf X_t=(X^1_t,\dots,X^N_t)$ denote an $N$–dimensional discrete-time stochastic process, observed at equidistant times $t\in\mathbb Z$.  
-	For a maximum relevant lag $\tau_{\max}\in\mathbb N$, define the \emph{past} of the process at time $t$ by  
-	$$
-	\mathbf X_{t}^{-}\;=\;(\mathbf X_{t-1},\dots,\mathbf X_{t-\tau_{\max}})\, .
-	$$
-	For two random variables $A,B$ and a conditioning set $\mathbf S$ we write the conditional-independence relation as  
-	$
-	A\;\perp\!\!\!\perp\;B\;\mid\;\mathbf S .
-	$  
+	\paragraph{Scope and limits.}
+	When all assumptions — linearity, non-Gaussianity, no latent confounding — are correct, LiNGAM provides an exact, interpretable causal representation.  
+	Once Gaussian noise, feedback loops, or unmeasured common causes enter, identifiability collapses; extensions such as Latent‐LiNGAM repair only special cases.  
 	
-	\paragraph*{Assumption 1 (Time-order).}  
-	For any pair of distinct components $(X^{i},X^{j})$ and any lag $\tau>0$, a directed link $X^{i}_{t-\tau}\rightarrow X^{j}_{t}$ is admissible \emph{only} if the cause temporally precedes the effect, i.e.\ $\tau>0$. Contemporaneous ($\tau=0$) links remain undirected.  
+	\subsubsection*{Supervised linear projections}
 	
-	\paragraph*{Assumption 2 (Causal sufficiency).}  
-	All relevant causal variables with respect to the problem under study are observed; equivalently, there exist no unmeasured common causes that simultaneously influence two or more observed components.  Under this assumption every statistical dependence induced by a confounder can, in principle, be explained away by conditioning on a subset of the observed variables.  
+	Pure PCA maximises variance and risks projecting away low-variance but causally crucial directions.  
+	Sufficient–dimension‐reduction (SDR) methods instead require that a projection $B^{\top}\mathbf{x}$ retain the conditional distribution of an outcome $Y$:
+	\[
+	Y\;\perp\!\!\!\perp\;\mathbf{x}\;\bigl|\;B^{\top}\mathbf{x}.
+	\]
+	In the causal vocabulary, $B$ must preserve all paths from $\mathbf{x}$ to $Y$.  
+	Canonical Correlation Analysis (CCA) and its time-lagged version TL-CCA realise this principle when variables arrive in two "views" — e.g. putative causes and effects separated by a lag \citep{Moneta2023}.  
+	Granger-PCA rotates ordinary principal axes so that each component predicts future values as strongly as possible, thereby ranking latent directions by dynamical influence as well as variance.
 	
-	\paragraph*{Assumption 3 (Causal Markov condition).}  
-	Let $\mathcal G=(\mathcal V,\mathcal E)$ be the (unknown) time-series graph whose nodes are $(X^k_{t-\tau})_{k,\tau}$ and whose edges encode the true causal links.  Then, for every node $V\in\mathcal V$ we have  
-	$$
-	V\;\perp\!\!\!\perp\;\text{ND}(V)\;\mid\;\mathrm{PA}(V),
-	$$
-	where $\mathrm{PA}(V)$ denotes the set of direct causes (parents) of $V$ in $\mathcal G$ and $\text{ND}(V)$ its non-descendants.  Hence, once its direct causes are known, $V$ is conditionally independent of every variable that it does not causally affect.  
+	\paragraph{Scope and limits.}
+	Linear SDR is fast, transparent, and easy to bias with domain knowledge (e.g.\ fix directions known to be causal).  
+	Because correlation does not imply causation, these projections must be interpreted with care: they preserve causal signal only if the analyst steers them toward it \citep{Nabi2022}.
 	
-	\paragraph*{Assumption 4 (Faithfulness / Stability).}  
-	The joint distribution of $\{\mathbf X_t\}_{t}$ is \emph{faithful} to the causal graph $\mathcal G$: every conditional independence observed in the data arises \emph{only} through the d-separation relations entailed by $\mathcal G$, and conversely every d-separation relation implies a corresponding conditional independence in the distribution.  Formally, for disjoint node sets $A,B,S$  
-	$$
-	A\;\text{d-separated from}\;B\;\text{by}\;S\;\text{in}\;\mathcal G
-	\;\;\Longleftrightarrow\;\;
-	A\;\perp\!\!\!\perp\;B\;\mid\;S .
-	$$
-	Faithfulness excludes measure-zero “cancellation” cases in which different causal pathways produce dependencies that exactly offset each other.  
+	\subsubsection*{Temporal models}
 	
-	\paragraph*{Implications for estimation.}
-	Taken together, these assumptions guarantee that the population-level conditional independences required by an algorithm such as Full Conditional Independence (FullCI) uniquely encode the underlying causal graph up to its Markov equivalence class.  Under time-order, orienting the edges becomes possible; under causal sufficiency, unshielded colliders can be consistently identified; and faithfulness ensures that no genuine causal link is mistakenly removed.  Violations of any assumption (e.g.\ latent confounders contradicting causal sufficiency, or near-cancellations violating faithfulness) can lead to erroneous edge deletions or spurious orientations, underscoring their critical role in practical causal network reconstruction from time-series data.
+	Time furnishes a partial ordering: causes precede effects.  
+	Vector-autoregressive LiNGAM extends the linear non-Gaussian framework to lagged interactions, recovering both instantaneous and delayed edges in a single estimation scheme.  
+	When linearity is doubtful or dimensionality large, constraint–based algorithms such as PCMCI/PCMCI$+$ \citep{Runge2019} test conditional independences across lags, pruning indirect and common-driver links while controlling false positives under autocorrelation.  
+	These procedures effectively yield a low-dimensional set of lagged parents for each variable—a dynamic causal representation.
 	
-	\subsubsection{Causal Discovery Methods}
+	\paragraph{Scope and limits.}
+	Temporal precedence can break many equivalences that plague static data, yet non-stationarity, seasonality or strong feedback still confuse tests and require long records.  
+	Moreover, hidden variables active at multiple lags can masquerade as direct links, reminding the analyst that time order alone does not guarantee completeness.
 	
-	A rich algorithmic toolbox has emerged for learning causal structure from multivariate time–series and i.i.d.\ data.  Below we summarise six representative methods that are widely used in practice, highlighting their assumptions, optimisation criteria, and suitability for high-dimensional, possibly non-linear systems.
+	\subsubsection*{Nonlinear neural models}
 	
+	To handle image, audio or raw sensor data one embeds causal assumptions inside deep generative models.  
+	CausalVAE inserts a learnable DAG layer between independent exogenous latents $z_0$ and dependent latents $z$, then decodes $z$ to reconstruct $\mathbf{x}$ \citep{Yang2021}.  
+	An acyclicity penalty keeps the latent graph well-behaved, and interventions on any latent dimension propagate through the decoder to produce counterfactual observations.  
+	Recent theory shows that, given multiple environments that perturb the latent noise terms, such models can recover causal latents up to permutation and scaling \citep{Scholkopf2021}.
 	
-	\paragraph*{Full Conditional Independence (FullCI).}  
-	Given a maximum lag $\tau_{\max}$, FullCI tests the null hypotheses  
-	$$
-	H_0^{(i\to j,\tau)}:\;X^{i}_{t-\tau}\;\perp\!\!\!\perp\;X^{j}_{t}\;\mid\;\mathbf X^{-}_{t}\setminus\{X^{i}_{t-\tau}\},\quad
-	\tau=1,\dots,\tau_{\max},
-	$$
-	using either linear partial correlation (yielding the classical vector-autoregressive \emph{Granger causality} score) or a non-parametric conditional-mutual-information estimator (yielding a multivariate \emph{transfer-entropy} score).  Rejection of $H_0^{(i\to j,\tau)}$ implies a directed edge $X^{i}_{t-\tau}\!\to\!X^{j}_{t}$.  FullCI is consistent under Assumptions~\ref{subsubsec:causal_assumptions}, but suffers from diminished power in high dimensions due to the large conditioning set.  
+	\paragraph{Scope and limits.}
+	Deep causal models accommodate arbitrary nonlinearity and high-dimensionality, but they trade closed-form guarantees for optimisation stability and the availability of multi-environment data.  
+	Without strong inductive bias, the learnt representation may still conflate causal and spurious factors.
 	
+	\subsubsection*{Summary}
 	
-	\paragraph*{PC Algorithm.}  
-	PC (Spirtes \emph{et al.}, 2000) iteratively removes edges from the complete undirected graph by statistical CI tests and then orients the remaining skeleton using sound logical rules.  At population level it returns the Markov-equivalence class (\emph{completed partially directed acyclic graph}, CPDAG) that is faithful to the data.  In the time-series variant, the temporal order provides additional orientation information, narrowing the equivalence class.  Its main limitations are (i) reliance on accurate CI tests under finite samples and (ii) exponential complexity in the worst case.  
-	
-	
-	\paragraph*{LiNGAM.}  
-	The \emph{Linear Non-Gaussian Acyclic Model} assumes that the data satisfy  
-	$
-	\mathbf X = B^\top\mathbf X + \boldsymbol\varepsilon,
-	$
-	where $B$ is a strictly upper-triangular coefficient matrix and $\boldsymbol\varepsilon$ has \emph{independent, non-Gaussian} components.  Exploiting identifiability results from independent-component analysis, LiNGAM recovers a unique causal ordering by estimating $B$ via ICA or related contrast functions.  The non-Gaussianity assumption overcomes Markov-equivalence ambiguity but restricts applicability to linear instantaneous effects.  
-	
-	---
-	
-	\paragraph*{NOTEARS.}  
-	\emph{Non-combinatorial optimisation via trace exponential and augmented lagrangian for structure learning} converts DAG learning into a smooth constrained optimisation problem  
-	$$
-	\min_{B\in\mathbb R^{d\times d}} \;\mathcal L(\mathbf X;B)+\lambda\|B\|_1
-	\quad\text{s.t.}\quad
-	h(B)=0,
-	$$
-	where $h(B)=\operatorname{tr}\!\big(\exp(B\odot B)\big)-d$ encodes acyclicity.  Owing to continuous optimisation, NOTEARS scales to hundreds of variables and easily accommodates generalised linear or neural-network regression losses, though it presumes causal sufficiency and i.i.d.\ samples.  Temporal extensions introduce lagged block-matrices while retaining the same acyclicity constraint.  
-	
-	---
-	
-	\paragraph*{GES (Greedy Equivalence Search).}  
-	GES is a score-based search that proceeds in two phases: (i) a forward pass greedily adds edges maximising a penalised likelihood (e.g.\ BIC), and (ii) a backward pass greedily deletes edges to further improve the score, operating directly on CPDAGs.  Under faithfulness and certain regularity conditions it is asymptotically consistent and often more sample-efficient than PC, but the scoring step assumes a parametric (typically Gaussian) model and the greedy heuristic may converge to sub-optimal local maxima.  
-	
-	---
-	
-	\paragraph*{Invariant Causal Prediction (ICP).}  
-	ICP exploits environmental or experimental heterogeneity.  Suppose the data are partitioned into environments $e\in\mathcal E$ such that the structural equation for a target $Y$ remains invariant:
-	$$
-	Y \;=\; f(\mathbf X_{S}) + \varepsilon,\qquad
-	\varepsilon\!\perp\!\!\!\perp\!\mathbf X_{S},\;\; \varepsilon\!\perp\!\!\!\perp\! e .
-	$$
-	ICP searches for the \emph{largest} subset $S$ of predictors whose conditional distribution of $Y$ is identical across environments—these predictors are then guaranteed to be a subset of the true parent set.  The method is non-parametric, accommodates hidden confounders that do not violate invariance, and provides finite-sample confidence sets, but requires sufficiently rich environment variation (e.g.\ interventions, covariate shifts).  
-	
-	\paragraph*{Summary.}
-	No single algorithm dominates across all scenarios.  FullCI and PC provide explicit control of false discoveries under the Markov-faithfulness paradigm but degrade with dimensionality.  LiNGAM offers point-wise identifiability beyond equivalence classes at the price of linearity and non-Gaussian noise.  Score-based (GES) and continuous-optimisation (NOTEARS) approaches scale favourably yet depend on possibly misspecified likelihood models.  Finally, ICP leverages distributional shifts to circumvent traditional identifiability obstacles, illustrating how auxiliary information can compensate for weaker structural assumptions.  In practice, a hybrid strategy—combining temporal ordering, sparsity priors, independent noise structure, and environmental variation—often yields the most reliable causal insights.
-	
-	\begin{table}[htbp]
-		\centering
-		\begin{tabulary}{\textwidth}{L|C|C}
-			\toprule
-			\textbf{Method} & \textbf{Core consistency assumptions} & \textbf{Asymptotic run time}\\
-			\midrule
-			\textbf{FullCI} (Granger / Transfer Entropy) &
-			Time-order; causal sufficiency; causal Markov; faithfulness; (weak-)stationarity &
-			$\mathcal O\!\bigl(N^{2}\,\tau_{\max}\,T\bigr)$ (linear tests)\\[4pt] \hline
-			
-			\textbf{PC algorithm} &
-			Causal sufficiency; acyclicity; causal Markov; faithfulness; valid CI oracle &
-			Worst case $\mathcal O\!\bigl(N^{2}2^{N}\bigr)$; sparse graphs $\mathcal O(N^{k})$\\[4pt] \hline
-			
-			\textbf{LiNGAM} &
-			Linear SEM; non-Gaussian independent errors; acyclicity; causal sufficiency &
-			ICA step $\mathcal O\!\bigl(N^{2}T\bigr)$ $+$ matrix ops $\mathcal O(N^{3})$\\[4pt] \hline
-			
-			\textbf{NOTEARS} &
-			Parametric SEM; acyclicity constraint $h(B)=0$; causal sufficiency; correctly specified loss &
-			Each gradient step $\mathcal O(N^{2})$; convergence $\mathcal O(N^{3})$\\[4pt] \hline
-			
-			\textbf{GES} (Greedy Equivalence Search) &
-			Decomposable score (e.g.\ BIC); acyclicity; causal sufficiency; causal Markov; faithfulness &
-			Worst case $\mathcal O(N^{4})$; sparse $\mathcal O\!\bigl(N^{2}\log N\bigr)$\\[4pt] \hline
-			
-			\textbf{ICP} (Invariant Causal Prediction) &
-			Invariance of $Y\mid X_S$ across environments; independent noise; no $\text{env}\!\to\!Y$ path; sufficient heterogeneity; Markov for $Y$ &
-			Exhaustive search $\mathcal O(2^{N})$; with screening $\mathcal O\!\bigl(N^{3}T\bigr)$\\
-			\bottomrule
-		\end{tabulary}
-		\caption{Causal-discovery algorithms, their key structural/statistical assumptions, and rough computational complexity for $N$ variables and $T$ samples.}
-		\label{tab:causal_methods_assumptions}
-	\end{table}
-		
+	Over the past thirty years, methods have evolved from simple linear models that work under strict assumptions to complex deep‐learning approaches that need a lot of data and conditions to hold.  
+	Linear mixture methods use non‐Gaussian signals to find causes, supervised projections like PCA/CCA keep information relevant to a target, time‐series algorithms use the order of events, and neural networks can learn rich causal features if given data from different settings.  
+	Our method, \textbf{PureCCA}, sits in the middle: it uses straightforward PCA/CCA ideas but forces the chosen components to capture causal relationships and make good predictions with time lags.  
+	In this way, it aims to produce a low‐dimensional representation that is easy to understand and still preserves the true causal links, without relying on overly restrictive assumptions.  
+
 	\subsection{State Space Reconstruction}\label{sec:ssr}
 	
 	\textbf{State-space reconstruction (SSR)} refers to the process of constructing a multi-dimensional phase space from time-series data such that the dynamics of an unknown system can be studied in that space. 
@@ -217,17 +163,17 @@
 	and let the observation function be
 	
 	$$
-	h\colon M\;\to\;\mathbb{R}^s, 
+	h\colon M\;\to\;\dR^s, 
 	$$
 	
 	so the time series data is a function $$ y(t)\;=\;h\bigl(x(t)\bigr). $$
 	
-	\subsubsection{Time–Delay Embedding}
+	\subsubsection*{Time–Delay Embedding}
 	
 	Following Packard \citep{Packard1980} and Takens \citep{Takens1981}, construct the delay‐coordinate map:
 	
 	$$
-	\Psi_{E,\tau}\colon M\;\to\;\mathbb{R}^E,
+	\Psi_{E,\tau}\colon M\;\to\;\dR^E,
 	\quad
 	\Psi_{E,\tau}\bigl(x(t)\bigr)
 	=\Bigl(y(t),\,y(t-\tau),\,y(t-2\tau),\dots,y\bigl(t-(E-1)\tau\bigr)\Bigr).
@@ -237,21 +183,21 @@
 	
 	Under the embedding $\Psi_{E,\tau}$, attractor dimension and lyapunov exponents are preserved.
 	
-	\subsubsection{Singular Spectrum Analysis (SSA)}
+	\subsubsection*{Singular Spectrum Analysis (SSA)}
 	
 	\textbf{Singular Spectrum Analysis} is a method that combines delay embedding with linear decomposition techniques to extract modes of variability from a time series. It can be seen as a data-driven, nonparametric spectral decomposition method, closely related to \textit{principal component analysis} (PCA) on time-delay vectors. In SSA, one first forms the Hankel matrix of the time series using a chosen window length $L$. For a series $X = (x_1, \dots, x_N)$, the trajectory matrix is: 
 	
 	$$ 
-	\mathbf{X} = [\,X_1 : X_2 : \cdots : X_K\,] \;\in \mathbb{R}^{L \times K}, \quad \text{where } X_i = (x_i, x_{i+1}, \dots, x_{i+L-1})^T, 
+	\mathbf{X} = [\,X_1 : X_2 : \cdots : X_K\,] \;\in \dR^{L \times K}, \quad \text{where } X_i = (x_i, x_{i+1}, \dots, x_{i+L-1})^T, 
 	$$ 
 	
 	and $K = N - L + 1$. 
 	Next, SSA performs a \textit{singular value decomposition} (SVD) of this trajectory matrix: $\mathbf{X} = \sum_{j=1}^L \sqrt{\lambda_j}\,U_j V_j^T$, equivalently diagonalizing the $L\times L$ lag-covariance matrix $\mathbf{S} = \mathbf{X}\mathbf{X}^T$ to obtain eigenvalues $\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_L$ and eigenvectors $U_j$. The eigenvectors $U_j$ provide an orthonormal basis of the $L$-dimensional embedding space, and projecting the trajectory matrix onto each $U_j$ yields the principal components (also called temporal EOFs in SSA literature). 
 	
-	The final steps involve **grouping** and **reconstruction**: one groups subsets of these components (e.g. those corresponding to a signal or trend of interest) and computes a reduced-rank approximation of $\mathbf{X}$. From this approximated trajectory matrix, the time series is reconstructed by averaging along the diagonals (each anti-diagonal corresponds to one time index).
+	The final steps involve \textbf{grouping} and \textbf{reconstruction}: one groups subsets of these components (e.g. those corresponding to a signal or trend of interest) and computes a reduced-rank approximation of $\mathbf{X}$. From this approximated trajectory matrix, the time series is reconstructed by averaging along the diagonals (each anti-diagonal corresponds to one time index).
 	By appropriate grouping, one can separate the original series into a sum of interpretable components: e.g. a slowly varying trend, oscillatory modes (often appearing as pairs of nearly equal $\lambda_j$ for sinusoidal components), and residual noise
 	
-	\subsubsection{Manifold–Learning Embeddings}
+	\subsubsection*{Manifold–Learning Embeddings}
 	
 	Classical delay embeddings and SSA use linear or fixed transformations. \textbf{Manifold learning} techniques, developed largely in the 2000s, enable nonlinear dimensionality reduction. 
 	These methods attempt to discover a low-dimensional manifold on which the high-dimensional data lie, preserving intrinsic geometric structure.
@@ -263,15 +209,15 @@
 	
 	When applying these to time-series, a typical approach is: first, embed the time series in latent space to get a point cloud $\{y(t)\}$ that samples the attractor.
 	Then run a manifold learning algorithm on $\{y(t)\}$.
-	The result will be a set of coordinates $\{\xi(t)\}$ in $\mathbb{R}^d$ that parametrizes the data manifold.
+	The result will be a set of coordinates $\{\xi(t)\}$ in $\dR^d$ that parametrizes the data manifold.
 	Ideally, $d$ will equal the true attractor dimension or a useful reduced dimension.
 	
-	\subsubsection{Riemannian and Geometric Representations}
+	\subsubsection*{Riemannian and Geometric Representations}
 	Another modern avenue for SSR involves representing segments of time series as geometric objects like covariance matrices or subspaces, which lie on curved manifolds. 
 	The motivation is that certain features of dynamical systems -- especially in high-dimensional or multivariate settings -- are naturally encoded by covariance or subspace structure, and by considering the appropriate geometry one can better compare and analyze these features.
 	
 	\paragraph{SPD–covariance manifold.}  
-	Given a $d$-dimensional multivariate time series or a $d$-channel signal and an embedding dimension $D$, one can form $D$-lagged vectors as before: $s_e(t) = [s_1(t), ..., s_d(t),\; s_1(t+\tau),...,s_d(t+\tau),\;\dots,\;s_1(t+(D-1)\tau),...,s_d(t+(D-1)\tau)]^T \in \mathbb{R}^{dD}$.
+	Given a $d$-dimensional multivariate time series or a $d$-channel signal and an embedding dimension $D$, one can form $D$-lagged vectors as before: $s_e(t) = [s_1(t), ..., s_d(t),\; s_1(t+\tau),...,s_d(t+\tau),\;\dots,\;s_1(t+(D-1)\tau),...,s_d(t+(D-1)\tau)]^T \in \dR^{dD}$.
 	This is essentially a phase-space reconstruction applied to each channel.
 	From a window of such vectors, one can compute a \textbf{sample covariance matrix} $R = \frac{1}{N}\sum_{i=1}^N s_e(t_i) s_e(t_i)^T$, which will be a $dD \times dD$ SPD matrix (symmetric positive-definite).
 	This covariance encapsulates both the spatial correlations between channels and temporal correlations up to lag $(D-1)\tau$.
@@ -280,15 +226,22 @@
 	In practice, this approach has been very successful in scenarios like EEG where the true state is high-dimensional and noisy; the covariance provides a robust signature of the state that filters out high-frequency noise.
 	
 	\paragraph{Grassmannian subspaces.}  
-	Instead of the full covariance, one can represent the **subspace** spanned by certain vectors associated with the time series. A prime example: in SSA or subspace system identification, we obtain an orthonormal basis of principal components (or an observability subspace) for the dynamics. The column space spanned by, say, the first $r$ singular vectors $U_1,\dots,U_r$ of the trajectory matrix is an $r$-dimensional subspace of $\mathbb{R}^L$. This subspace itself can be treated as a point on a Grassmann manifold $\mathcal{G}(r, L)$ (the set of all $r$-dimensional subspaces in $\mathbb{R}^L$). The Grassmann manifold has a natural Riemannian metric (derived from principal angles between subspaces), so one can measure distances between two subspaces (for instance, two different time series might yield two subspaces capturing their dynamics, and one can compute how “far apart” these dynamics are on $\mathcal{G}$). This concept is used in **subspace-based clustering of time series** and in linear system identification: each linear dynamical system of order $r$ corresponds to an $r$-dimensional observability subspace. By embedding an unknown system’s data and estimating an $r$-dim subspace, one effectively reconstructs a linear state-space. Clustering on Grassmann then groups systems with similar subspaces. Recent reviews categorize various Grassmannian methods for multivariate time series clustering and modeling, highlighting that many algorithms differ by how they construct the subspace (e.g., via SVD of Hankel matrix, via autoregressive model subspace, or via frequency domain) but ultimately compare subspaces on $\mathcal{G}$.
+	Instead of the full covariance, one can represent the subspace spanned by certain vectors associated with the time series.
+	A prime example: in SSA or subspace system identification, we obtain an orthonormal basis of principal components (or an observability subspace) for the dynamics.
+	The column space spanned by, say, the first $r$ singular vectors $U_1,\dots,U_r$ of the trajectory matrix is an $r$-dimensional subspace of $\dR^L$.
+	This subspace itself can be treated as a point on a Grassmann manifold $\mathcal{G}(r, L)$ (the set of all $r$-dimensional subspaces in $\dR^L$).
+	The Grassmann manifold has a natural Riemannian metric (derived from principal angles between subspaces), so one can measure distances between two subspaces.
+	This concept is used in subspace-based clustering of time series and in linear system identification: each linear dynamical system of order $r$ corresponds to an $r$-dimensional observability subspace.
+	By embedding an unknown system’s data and estimating an $r$-dim subspace, one effectively reconstructs a linear state-space.
+	Clustering on Grassmann then groups systems with similar subspaces.
+	Recent reviews categorize various Grassmannian methods for multivariate time series clustering and modeling, highlighting that many algorithms differ by how they construct the subspace (e.g., via SVD of Hankel matrix, via autoregressive model subspace, or via frequency domain) but ultimately compare subspaces on $\mathcal{G}$.
 	
-	\subsubsection{Summary}
+	\subsubsection*{Summary}
 	
-	State-space reconstruction remains a cornerstone in the analysis of nonlinear time series and dynamical systems.
-	Classical methods like time-delay embedding and singular spectrum analysis provide the theoretical and practical foundation, allowing us to reconstruct attractors and identify dynamics from scalar observations.
-	Modern developments have greatly expanded the toolkit: nonlinear manifold learning preserves the true geometry of attractors in reduced coordinates, Riemannian approaches leverage the geometry of covariance and subspace manifolds to compare complex dynamics.
-	Each method comes with its assumptions, strengths, and limitations, which are summarized in table \ref{tab:ssr_selected}.
-	In practice, the choice of method depends on the system characteristics  and the analysis goal.
+	Traditional methods like time‐delay embedding and singular spectrum analysis let us rebuild the system’s attractor from a single observed variable so that the hidden dynamics become explicit.  
+	Modern techniques add flexibility: nonlinear manifold learning finds lower‐dimensional coordinates that keep the attractor’s shape, while Riemannian methods use covariance or subspace geometry to compare complex states.  
+	PureCCA relies on these reconstructed state spaces to extract a small set of components that capture causal influence, since working in the state domain makes cause‐and‐effect links easier to separate than in the raw measurement space.  
+	Each SSR approach has its own assumptions, benefits, and drawbacks (see Table \ref{tab:ssr_selected}). In practice, we choose the one that best reveals the latent dynamics before applying PureCCA.
 	
 	\begin{table}[bhtp]
 		\centering
@@ -326,307 +279,859 @@
 		\label{tab:ssr_selected}
 	\end{table}
 	
-	\section{Problem statement}
+	\section{Problem statement} \label{sec:problem}
 	
 	Let
 	\[
-	\mathbf X(t)=\bigl[X_{1}(t),\dots ,X_{p}(t)\bigr]^{\!\top}\in\mathbb R^{p},
-	\qquad t=1,\dots ,T ,
+	\mathbf X_t = \bigl[X_t^1, \ldots, X_t^{n_x}\bigr]\T, \qquad \mathbf Y(t)=\bigl[Y_t^1, \dots, Y_t^{n_y}\bigr]\T,
+	\quad t=1, \dots, T,
 	\]
-	denote a multivariate, possibly nonlinear and non‑stationary time series
-	generated by an unknown smooth dynamical system.
+	be two multivariate time series recorded at uniform sampling rate.
+	We assume the observations are generated by an unknown nonlinear dynamical system that evolves on a compact attractor of finite dimension. The dependency between X and Y could be nonlinear and time-delayed.
 	
-	\begin{quote}
-		\textbf{Goal.}  
-		From the observations $\mathbf X(1{:}T)$ infer a \emph{directed weighted
-			graph}
-		\[
-		\mathcal G=(V,E,W), \qquad
-		V=\{1,\dots ,m\},\;
-		E\subseteq V\times V,\;
-		W:E\to\mathbb R_{\ge 0},
-		\]
-		such that
-		\begin{enumerate}[label=(\roman*)]
-			\item a directed edge $(j,i)\in E$ exists
-			\emph{iff} subsystem $j$ is a dynamical cause of subsystem $i$
-			after accounting for all other variables;
-			\item the associated weight $W_{j\to i}$ is a non‑negative scalar
-			quantifying the \emph{strength} of that causal influence,
-			comparable across edges.
-		\end{enumerate}
-	\end{quote}
+	Next, we introduce a pair of shared encoders  
+	\[
+	\varphi_{\text{enc}}:\dR^{n_x}\times \dR^{n_y} \longrightarrow \dR^{m},
+	\qquad
+	\psi_{\text{enc}}: \dR^{n_x}\times  \dR^{n_y} \longrightarrow \dR^{m},
+	\]
+	applied row-wise to obtain latent matrices  
+	\[
+	\bP_t=\varphi_{\text{enc}}\bigl(\bX_t, \bY_t\bigr) \in \dR^{m},
+	\qquad
+	\bQ_t=\psi_{\text{enc}} \bigl(\bX_t, \bY_t\bigr) \in \dR^{m},
+	\qquad
+	t=1,\dots ,T.
+	\]
+	Two decoders  
+	\[
+	\varphi_{\text{dec}}: \dR^{m} \longrightarrow \dR^{n_x},
+	\qquad
+	\psi_{\text{dec}}: \dR^{m} \longrightarrow \dR^{n_y}
+	\]
+	map the embeddings back to reconstructions 
 	
-	Deliverables:
-	\begin{itemize}
-		\item The vertex set $V$ (interpretable latent or observed subsystems);
-		\item The edge list $E$ indicating statistically significant
-		causal links;
-		\item The causal‑strength matrix
-		$\mathbf W=[W_{j\to i}]_{i,j=1}^{m}\in\mathbb R_+^{m\times m}$.
+	Reconstructions are received by applying decoders to the latent projections:
+	\[
+	\widehat \bX_t = \varphi_{\text{dec}}(\varphi_{\text{enc}}(\bX_t, \bY_t)),
+	\qquad
+	\widehat \bY_t = \psi_{\text{dec}}(\psi_{\text{enc}}(\bX_t, \bY_t))
+	\]
+	
+	The $m$ latent dimensions are partitioned into
+	\[
+	m=d_{\mathrm c}+d_{\mathrm r}, \qquad d_{\mathrm c}\ll m\ll min(n_x, n_y),
+	\]
+	where the first $d_{\mathrm c}$ coordinates form the \textbf{causal subspace} and the remaining $d_{\mathrm r}$ coordinates form the \textbf{reconstructive subspace}.  
+	Formally,
+	\[
+	\bP_t=
+	\begin{bmatrix}
+		\bP_t^{\mathrm c} \\ \bP_t^{\mathrm r}
+	\end{bmatrix},
+	\quad
+	\bQ_t=
+	\begin{bmatrix}
+		\bQ_t^{\mathrm c} \\ \bQ_t^{\mathrm r}
+	\end{bmatrix},
+	\qquad
+	\bP_t^{\mathrm c}, \bQ_t^{\mathrm c} \in \dR^{d_{\mathrm c}},
+	\quad
+	\bP_t^{\mathrm r}, \bQ_t^{\mathrm r} \in \dR^{d_{\mathrm r}} .
+	\]
+	
+	The first block is intended to capture the
+	lagged causal interaction between $\bX_t$ and $\bY_t$, whereas the remaining
+	coordinates are responsible for reconstruction.
+	
+	\paragraph{Meta-objective.}
+	Learning jointly tunes encoder and decoders by minimising
+	\[
+	\mathcal L
+	=
+	\underbrace{\lambda_{\mathrm{rec}}
+		\bigl[
+		|| \bX_t - \widehat \bX_t ||_F + || \bY_t - \widehat \bY_t ||_F
+		\bigr]}_{\text{reconstruction loss}}
+	\;+\;
+	\underbrace{\lambda_{\mathrm{c}}
+		\,\mathcal L_{\mathrm c}\bigl(P_{t-\tau}^{\mathrm c},Q_t^{\mathrm c}\bigr)}_{\text{causal loss}},
+	\]
+	where  
+	
+	\begin{itemize}[leftmargin=1.4cm]
+		\item $\mathcal L_{\mathrm c}$ is a \emph{causal alignment loss} that rewards statistical dependence between lagged causal embeddings  
+		(for example, negative CCA correlation or negative CCM score);
+		\item $\tau$ is a set of candidate time lags  
+		$\tau \in \{0,1,\dots,\tau_{\max}\}$ that lets us detect after how many steps $\bX_{t - \tau}$ influences $\bY_t$;
+		\item $\lambda_{\mathrm{rec}}, \; \lambda_{\mathrm{c}}>0$ balance reconstruction quality and causal fit.
+	\end{itemize}
+
+	As a result of this optimization, we obtain
+	$\mathbf P_t^{\mathrm c}, \mathbf Q_t^{\mathrm c}$ — low-dimensional causal embeddings, and 
+	$\widehat{\bX_t}, \widehat{\bY_t}$ — accurate reconstructions of the original signals.
+
+	\paragraph{Constraints.}
+	\begin{itemize}[nosep,leftmargin=1.2cm]
+		\item The attractor is assumed to admit a delayed embedding under moderate noise.
+		\item All significant causal information is contained in the subspace of dimension $d_{\mathrm c}$.
+		\item The blocks $\bP^{\mathrm c}_t$ and $\bP^{\mathrm r}_t$ 
+		(and likewise for $bQ_t$) are approximately orthogonal, reducing interference between reconstruction and causal analysis.
 	\end{itemize}
 	
-	Assumptions:
-	\begin{enumerate}[label=\arabic*.]
-		\item \textit{Smooth dynamics:} each subsystem evolves on a compact,
-		finite‑dimensional attractor admitting delay embedding.
-		\item \textit{Sufficient observability:} the recorded (or projected)
-		channels uniquely encode each attractor state.
-		\item \textit{Faithfulness:} a non‑zero causal effect yields a
-		non‑zero statistical signature detectable from data of length $T$.
-		\item \textit{Low measurement noise:} additive noise is small enough not
-		to violate embedding diffeomorphism.
+	\subsection{Quality criteria.} \label{subsec:quality}
+	\paragraph{Multicolinearity diagnostics.}
+	For latent representations  $\bP_t, \; \bQ_t$
+	we evaluate 
+	\[
+	\text{VIF} = \max_{j} \text{VIF}_j = \max_{j}\frac{1}{1-R_j^{2}},
+	\quad
+	\kappa = \frac{\sigma_{\max}}{\sigma_{\min}},
+	\]
+	where $R_j^{2}$ is the coefficient of determination when
+	regressing the $j$-th column to the rest,
+	and $\sigma_{\max},\sigma_{\min}$ are singular values
+	of $\bP_t\T \bP_t$ and $\bQ_t\T \bQ_t$.
+	
+	\paragraph{Reconstruction error.}
+	Only the first part of the losses is taken into account
+	\(
+	\mathcal L_{\mathrm{rec}}
+	=
+	\Vert\bX-\widehat\bX\Vert_F
+	+
+	\Vert\bY-\widehat\bY\Vert_F .
+	\)
+	
+	\paragraph{Predictive performance.}
+	For every downstream task we train three competing predictors:
+	
+	\begin{enumerate}[label=(\roman*),nosep,leftmargin=1.4cm]
+		\item \( \mathcal{M}_{\mathrm{self}} \) that uses only the past of the target,  
+		\( \bF^{(i)}_t = \bigl\{ \bY_{t}\bigr\}_{\tau\in\mathcal{T}} \);
+		\item \( \mathcal{M}_{\mathrm{raw}} \) that augments those lags with the raw driver series,  
+		\( \bF^{(ii)}_t = \bigl\{ \bY_{t},\,\bX_{t-\tau}\bigr\}_{\tau\in\mathcal{T}} \);
+		\item \( \mathcal{M}_{\mathrm{causal}} \) that replaces the raw driver by the causal embedding,  
+		\( \bF^{(iii)}_t = \bigl\{ \bY_{t},\,\bP_{t-\tau}^{\mathrm c}\bigr\}_{\tau\in\mathcal{T}} \).
 	\end{enumerate}
 	
-	\section{Suggested Method CA-SSR-CCM}
+	Let \(\mathrm{Perf}(\mathcal{M})\) denote the chosen evaluation metric  
+	(negative RMSE for regression, or F1-score for classification).  
+	The relative gain provided by the causal features is quantified by
+	\[
+	\Delta_{\text{score}}
+	\;=\;
+	\mathrm{Perf}\bigl(\mathcal{M}_{\mathrm{causal}}\bigr)
+	\;-\;
+	\max\Bigl\{
+	\mathrm{Perf}\bigl(\mathcal{M}_{\mathrm{self}}\bigr),\,
+	\mathrm{Perf}\bigl(\mathcal{M}_{\mathrm{raw}}\bigr)
+	\Bigr\}.
+	\]
 	
-	\subsection{Embedding (SSR)}
-	For each observable or latent component $i\in\{1,\dots ,m\}$ choose an
-	embedding dimension $E_{i}$ and delay $\tau_{i}$ (Takens’ conditions) and
-	construct
-	\begin{equation}
-		\mathbf y_{i}(t)=
-		\bigl[
-		\widetilde X_{i}(t),
-		\widetilde X_{i}(t-\tau_{i}),
-		\dots ,
-		\widetilde X_{i}(t-(E_{i}-1)\tau_{i})
-		\bigr]^{\!\top}\in\mathbb R^{E_{i}},
-		\label{eq:ssr}
-	\end{equation}
-	where $\widetilde X_{i}$ may be either a raw channel or an optional linear
-	projection $\widetilde{\mathbf X}=\mathbf P\,\mathbf X$ (PCA, ICA, NMF)
-	chosen for interpretability.
+	A positive \(\Delta_{\text{score}}\) indicates that the causal subspace
+	\(\bP^{\mathrm c}\) yields better predictions than any combination
+	of the original observables, thus validating the utility of causal embeddings.
 	
-	\subsection{Information‑Theoretic CCM (IT‑CCM)}
-	For two reconstructed manifolds
-	$\mathcal M_{i}=\{\mathbf y_{i}(t)\}$ and
-	$\mathcal M_{j}=\{\mathbf y_{j}(t)\}$
-	and a prediction horizon $\tau>0$:
-	%
-	\paragraph{Local prediction.}
-	Using the $K$ nearest neighbours of $\mathbf y_{j}(t)$ (library size $L$),
-	form the simplex projection
-	\begin{equation}
-		\hat X_{i,j}^{(L)}(t+\tau)=
-		\sum_{k=1}^{K} w_{k}\,\widetilde X_{i}(t_{k}+\tau).
-		\label{eq:simplex}
-	\end{equation}
 	
-	\paragraph{Cross‑map skill via mutual information.}
-	\begin{equation}
-		\rho_{j\to i}^{(L)}(\tau)=
-		MI\!\bigl(
-		\hat X_{i,j}^{(L)}(t+\tau);
-		\widetilde X_{i}(t+\tau)
-		\bigr),
-		\label{eq:itccm}
-	\end{equation}
-	where $I(\cdot;\cdot)$ is estimated with the
-	Kraskov–Stögbauer–Grassberger $k$‑NN method.
+	\section{Suggested Method PureCCA} \label{sec:purecca}
 	
-	\paragraph{Causality test.}
-	A directed edge $(j,i)$ is declared present if
-	\begin{equation}
-		\max_{L}\rho_{j\to i}^{(L)}(\tau)\;>\;
-		\rho_{\text{surrogate},\,1-\alpha}
-		\quad\text{for some } \tau\le\tau_{\max},
-		\label{eq:criterion}
-	\end{equation}
-	and the trajectory of $\rho_{j\to i}^{(L)}(\tau)$ converges
-	monotonically in $L$.
+	PureCCA is a linear two–block encoder–decoder that separates a pair of
+	multivariate time–series \(\{\bX_t ,\bY_t\}_{t=1}^{T}\) into
+	\emph{causal coordinates}, responsible for the directed lagged influence
+	\(\bX_{t-\tau}\!\to\bY_t\), and \emph{reconstructive coordinates}, which
+	retain the remaining variance.  
+	All steps are algebraic (CCA\,+\,PCA); no gradient optimisation is
+	required.
 	
-	\paragraph{Edge weight.}
-	\begin{equation}
-		W_{j\to i}=
-		\max_{\tau\le\tau_{\max}}\;
-		\max_{L}\rho_{j\to i}^{(L)}(\tau)
-		\quad\bigl[\text{nats}\bigr].
-		\label{eq:weight}
-	\end{equation}
+	%------------------------------------------------------------
+	\subsection*{Lag autodetection by shifted CCA}
 	
-	\subsection{Graph Assembly}
-	Collect all significant edges $(j,i)$ and their weights~\eqref{eq:weight}
-	to yield the directed weighted graph
-	$\widehat{\mathcal G}=(V,E,W)$ satisfying the problem statement.
+	Choose a candidate set of lags
+	\(\mathcal{T}=\{0,1,\dots,\tau_{\max}\}\).  
+	For each \(\tau\in\mathcal{T}\) centre the data,
+	form the shifted pairs
+	\(\bX_{t-\tau},\,\bY_t\) (dropping incomplete rows), run one–component
+	CCA, and record the canonical correlation \(\rho(\tau)\).  
+	The maximiser
+	\[
+	\tau^{\star}=\arg\max_{\tau\in\mathcal{T}}\rho(\tau)
+	\]
+	is used in all subsequent formulas.
 	
-	The dominant complexity per pair $(j,i)$ and delay $\tau$ is
-	$O\!\bigl(k\,T\log T\bigr)$ for $k$‑NN mutual‑information estimation.
-	Efficient neighbour searches (kd‑trees, ball trees) and parallelisation
-	over variable pairs are recommended for large $p$ or long records.
+	%------------------------------------------------------------
+	\subsection*{Causal part}
 	
-%	\section{Suggested method CA-SSR-CCM}
-%	
-%	\subsection{General notation}
-%	
-%	Consider two time series
-%	$$
-%	\mathbf{X}(t) \in \mathbb{R}^{N \times d_X}, 
-%	\qquad
-%	\mathbf{Y}(t) \in \mathbb{R}^{N \times d_Y},
-%	\qquad
-%	t = 1,2,\dots,T.
-%	$$
-%	
-%	Let $p(\mathbf{X},\mathbf{Y})$ denote the joint distribution of these data.
-%	
-%	Our objective is to analyse the causal relationships between $\mathbf{X}$ and $\mathbf{Y}$, i.e.\ to determine whether there exists (and how strong it is) a directed dependence
-%	$$
-%	\mathbf{X} \;\longrightarrow\; \mathbf{Y},
-%	\qquad\text{or}\qquad
-%	\mathbf{Y} \;\longrightarrow\; \mathbf{X}.
-%	$$
-%	
-%	\subsection{Independent Component Analysis (ICA)}
-%
-%	When one observes high-dimensional signals $\mathbf{X}(t)$ that contain mixtures of many latent sources, it is common to introduce the model
-%	$$
-%	\mathbf{X}(t)=A\,\mathbf{S}(t),
-%	$$
-%	where $\mathbf{S}(t)\in\mathbb{R}^{d_S}$ is a vector of independent components and $A$ is a constant mixing matrix.  The coordinates of $\mathbf{S}(t)$ are assumed to be statistically independent:
-%	$$
-%	p(\mathbf{S}) \;=\; \prod_{k=1}^{d_S} p\!\bigl(S_k\bigr).
-%	$$
-%	The goal of independent component analysis is to estimate $\widehat{A}^{-1}$ (or, equivalently, $A$) such that
-%	$$
-%	\widehat{\mathbf{S}}(t) \;=\; \widehat{A}^{-1}\,\mathbf{X}(t)
-%	$$
-%	maximises the mutual independence of the components.  Measures of independence include entropy, mutual information, and related criteria.  The resulting independent components $\widehat{\mathbf{S}}(t)$ can then be analysed instead of the raw observations $\mathbf{X}(t)$, which often simplifies the discovery of causal relationships—especially in EEG studies.
-%
-%	\subsection{Convergent Cross Mapping (CCM)}
-%	
-%	To test the hypothesis that $\mathbf{X}(t)$ causally influences $\mathbf{Y}(t)$ one may use **convergent cross mapping**.  Form a “shadow” (delay) embedding
-%	$$
-%	M_{X,t}
-%	\;=\;
-%	\bigl(X_t,\;X_{t-\tau},\;\dots,\;X_{t-(E-1)\tau}\bigr),
-%	$$
-%	where $E$ is the embedding dimension and $\tau$ is the time-delay.  The embedding $M_{Y,t}$ is defined analogously.  
-%	
-%	If the vector $M_{X,t}$ can accurately **reconstruct** $\mathbf{Y}_t$, i.e.\
-%	$$
-%	\widehat{\mathbf{Y}}_t
-%	\;=\;
-%	\sum_{i=1}^{k} w_i \,\mathbf{Y}_{n_i},
-%	$$
-%	where $n_i$ are the indices of the $k$ nearest neighbours of $M_{X,t}$ in the $M_X$ space, then one concludes that there is a dynamical causal link $\mathbf{X}\!\to\!\mathbf{Y}$.  The statistic
-%	$$
-%	\rho_{X\to Y}
-%	\;=\;
-%	\mathrm{corr}\!\Bigl(\{\widehat{\mathbf{Y}}_t\},\,\{\mathbf{Y}_t\}\Bigr)
-%	$$
-%	should increase as the size of the “library” (the set of points used for reconstruction) grows, provided the causal direction $\mathbf{X}\!\to\!\mathbf{Y}$ is genuine.
-%
-%	\subsection{Information-based Convergent Cross Mapping}
-%	
-%	Instead of point estimates we consider the distributions $p\bigl(Y_t \mid M_{X,t}\bigr)$ and $p(Y_t)$.
-%	
-%	Accordingly, we replace the correlation measure by mutual information as the estimate of causal influence:
-%	$$
-%	Prob_{\text{CCM}}(X, Y)
-%	= MI(M_X,\,Y)
-%	=
-%	\mathbb{E}_{X}\!
-%	\Bigl[
-%	D_{\mathrm{KL}}
-%	\!\bigl(
-%	p\bigl(Y \mid M_X\bigr)
-%	\,\big\|\,
-%	p\bigl(Y\bigr)
-%	\bigr)
-%	\Bigr],
-%	$$
-%	where $D_{\mathrm{KL}}$ denotes the Kullback–Leibler divergence.
-%	
-%	Because mutual information is symmetric, assessing directed (one-way) links requires conditional mutual information:
-%	$$
-%	MI(X, Y \mid Y_{\mathrm{hist}})
-%	=
-%	\mathbb{E}_{X,\,Y_{\mathrm{hist}}}\!
-%	\Bigl[
-%	D_{\mathrm{KL}}
-%	\bigl(
-%	p\bigl(
-%	Y \mid M_X,\,Y_{\mathrm{hist}}
-%	\bigr)
-%	\,\big\|\,
-%	p\bigl(
-%	Y \mid Y_{\mathrm{hist}}
-%	\bigr)
-%	\bigr)
-%	\Bigr].
-%	$$
-%	
-%	\begin{algorithm}[h!]
-%		\caption{Probabilistic detection of the influence $\mathbf{X}\!\to\!\mathbf{Y}$ based on ICA and kernel density estimation (KDE)}
-%		\label{alg:ICA_KDE_Causal}
-%		
-%		\textbf{Input:}
-%		\begin{itemize}
-%			\item EEG observations $\{\mathbf{X}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_X}$.
-%			\item IMU observations $\{\mathbf{Y}_{\mathrm{raw}}(t)\}_{t=1}^T \subset \mathbb{R}^{d_Y}$.
-%			\item Hyper-parameters: number of independent components $r$ for ICA; embedding dimension $E$ and time-lag $\tau$; kernel bandwidths $h_X$ and $h_Y$.
-%		\end{itemize}
-%		
-%		\textbf{Output:}
-%		\begin{itemize}
-%			\item A causal DAG\footnote{A directed acyclic graph whose edges represent the detected causal influences.}.
-%		\end{itemize}
-%		
-%		\begin{enumerate}
-%			\item \textbf{Independent Component Analysis (ICA).}
-%			
-%			\[
-%			\mathbf{X}_{\mathrm{raw}}(t) \;=\; A\,\mathbf{S}(t),
-%			\qquad
-%			\mathbf{S}(t)\in\mathbb{R}^{r},
-%			\qquad
-%			A\in\mathbb{R}^{d_X\times r}.
-%			\]
-%			
-%			Estimate the independent components:
-%			\[
-%			\widehat{\mathbf{S}}(t)
-%			\;=\;
-%			\widehat{A}^{-1}\,
-%			\mathbf{X}_{\mathrm{raw}}(t).
-%			\]
-%			
-%			\item \textbf{Construction of temporal embeddings for $\mathbf{X}$ and $\mathbf{Y}$.}
-%			
-%			For each $t$ define
-%			\[
-%			M_{X,t}
-%			\;=\;
-%			\bigl(\widehat{\mathbf{S}}(t),\,
-%			\widehat{\mathbf{S}}(t-\tau),\,
-%			\dots,\,
-%			\widehat{\mathbf{S}}(t-(E-1)\tau)\bigr)
-%			\;\in\;\mathbb{R}^{rE},
-%			\]
-%			\[
-%			M_{Y,t}
-%			\;=\;
-%			\mathbf{Y}_{\mathrm{raw}}(t)
-%			\;\in\;\mathbb{R}^{d_Y E}.
-%			\]
-%			
-%			\item \textbf{Causal-effect estimation.}
-%			
-%			In the joint space $(M_{X,t},\,M_{Y,t})$ compute, for each
-%			$l\in\{1,\dots,d_Y\}$, the influence of $\mathbf{X}$ on $Y_l(t)$ via
-%			\[
-%			\mathrm{Prob_{CCM}}\!\bigl(M_{X,t},\,Y_l(t)\bigr).
-%			\]
-%			Likewise, for every $m\in\{1,\dots,d_X\}$ evaluate
-%			\[
-%			\mathrm{Prob_{CCM}}\!\bigl(M_{Y,t},\,X_m(t)\bigr).
-%			\]
-%		\end{enumerate}
-%	\end{algorithm}
+	\begin{enumerate}[leftmargin=1.4cm,label=(C\arabic*)]
+		\item
+		Fit CCA with \(d_{\mathrm c}\) components to the
+		pair \((\bX_{t-\tau^{\star}},\bY_t)\).  
+		Let the CCA weight matrices be
+		\[
+		\bW_x^{\mathrm c}\in\dR^{n_x\times d_{\mathrm c}},
+		\qquad
+		\bW_y^{\mathrm c}\in\dR^{n_y\times d_{\mathrm c}}.
+		\]
+		\item
+		Construct the causal scores at all time steps
+		\[
+		\bP_t^{\mathrm c}= \bX_{t-\tau^{\star}}\,\bW_x^{\mathrm c},
+		\qquad
+		\bQ_t^{\mathrm c}= \bY_t\,\bW_y^{\mathrm c}.
+		\]
+		\item Remove the rank-\(d_{\mathrm c}\) causal projection
+		\[
+		\bX_{\text{res}}
+		= \bX_t - \bP_t^{\mathrm c}{\bW_x^{\mathrm c}}\T,\quad
+		\bY_{\text{res}}
+		= \bY_t - \bQ_t^{\mathrm c}{\bW_y^{\mathrm c}}\T,
+		\]
+	\end{enumerate}
+	
+	\subsection*{Reconstruction part}
 
+	\begin{enumerate}[leftmargin=1.4cm,label=(R\arabic*)]
+		\item
+		Apply PCA with \(d_{\mathrm r}=m-d_{\mathrm c}\) components to each
+		residual and collect
+		\[
+		\bW_x^{\mathrm r}\in\dR^{n_x\times d_{\mathrm r}},
+		\qquad
+		\bW_y^{\mathrm r}\in\dR^{n_y\times d_{\mathrm r}}.
+		\]
+		\item
+		Define the reconstructive scores
+		\[
+		\bP_t^{\mathrm r}= \bX_{res}\,\bW_x^{\mathrm r},
+		\qquad
+		\bQ_t^{\mathrm r}= \bY_{res}\,\bW_y^{\mathrm r}.
+		\]
+	\end{enumerate}
+	
+	%------------------------------------------------------------
+	
+	Every centred observation is expressed as the sum of its two
+	orthogonal parts
+	\[
+	\widehat{\bX}_t
+	=\overline{\bX}
+	\;+\;
+	\bP_t^{\mathrm c}{\bW_x^{\mathrm c}}^{\!\mathsf T}
+	\;+\;
+	\bP_t^{\mathrm r}{\bW_x^{\mathrm r}}^{\!\mathsf T},
+	\qquad
+	\widehat{\bY}_t
+	=\overline{\bY}
+	\;+\;
+	\bQ_t^{\mathrm c}{\bW_y^{\mathrm c}}^{\!\mathsf T}
+	\;+\;
+	\bQ_t^{\mathrm r}{\bW_y^{\mathrm r}}^{\!\mathsf T},
+	\]
+	where \(\underline{\bX},\underline{\bY}\) are the column means.
+	
+	%------------------------------------------------------------
+	\subsection*{Theoretical properties in the whitened space}
+	Let the centred and whitened data matrices be
+	\[
+	X\!\in\!\R^{T\times n_x},\;
+	\Sigma_{xx}=\frac{1}{T}X^{\top}X = I_{n_x}
+	\].
+	PureCCA returns two orthonormal loading sets  
+	\(W_x^{\mathrm c}\in\R^{n_x\times d_{\mathrm c}}\)  
+	and \(W_x^{\mathrm r}\in\R^{n_x\times d_{\mathrm r}}\)
+	with \(d_{\mathrm c}+d_{\mathrm r}=d_{\mathrm hid}\).
+	Their score blocks are
+	
+	\[
+	P^{\mathrm c}=X\,W_x^{\mathrm c}\in\R^{T\times d_{\mathrm c}},
+	\quad
+	P^{\mathrm r}=X\,W_x^{\mathrm r}\in\R^{T\times d_{\mathrm r}}.
+	\]
+	
+	Note, that by the construction $W_x^{\mathrm c}, W_x^{\mathrm r}, W_y^{\mathrm c}, W_y^{\mathrm r}$ are column-wise orthogonal: by construction for PCA weights and by whittening for CCA weights.
+	
+	%--------------------  LEMMA  ---------------------
+	\begin{lemma}[Score orthogonality]\label{lem:score_orth}
+		After whitening, the causal and reconstructive scores are Euclidean-orthogonal:
+		\[
+		P^{\mathrm c\!\top}\,P^{\mathrm r}=0_{d_{\mathrm c}\times d_{\mathrm r}}.
+		\]
+	\end{lemma}
+	
+	\begin{Proof}
+		The causal projector is \(P_c=W_x^{\mathrm c}{W_x^{\mathrm c}}^{\!\top}\).
+		By construction of the residual we have  
+		\(X_{\mathrm{res}} = X - X\,P_c\) and
+		\(P^{\mathrm r}=X_{\mathrm{res}}W_x^{\mathrm r}\).
+		Using the whitened inner product,
+		
+		\[
+		\!P^{\mathrm c\!\top}P^{\mathrm r}
+		= W_x^{\mathrm c\!\top}X^{\top}\bigl(X-XP_c\bigr)W_x^{\mathrm r}
+		= W_x^{\mathrm c\!\top}(I_{n_x}-P_c)W_x^{\mathrm r}
+		= W_x^{\mathrm c\!\top}W_x^{\mathrm r}-W_x^{\mathrm c\!\top}P_cW_x^{\mathrm r}
+		= 0.
+		\]
+	\end{Proof}
+	
+	Define the score–covariance blocks
+	\[
+	\Sigma_{pp}^{\mathrm{cc}}
+	:=\frac1T P^{\mathrm c\!\top}P^{\mathrm c}\in\R^{d_{\mathrm c}\times d_{\mathrm c}},\;
+	\Sigma_{pp}^{\mathrm{rr}}
+	:=\frac1T P^{\mathrm r\!\top}P^{\mathrm r}\in\R^{d_{\mathrm r}\times d_{\mathrm r}}.
+	\]
+	
+	%------------------  THEOREM  ---------------------
+	\begin{theorem}[PureCCA Euclidean block structure]
+		\label{thm:orth_blocks}
+		In the whitened space the following hold.
+		\begin{enumerate}[label=(\roman*)]
+			\item \emph{Weight orthogonality:}
+			\({W_x^{\mathrm c}}^{\!\top}W_x^{\mathrm r}=0_{d_{\mathrm c}\times d_{\mathrm r}}\).
+			\item \emph{Score orthogonality:}
+			\(P^{\mathrm c\!\top}P^{\mathrm r}=0\)  (Lemma~\ref{lem:score_orth}).
+			\item \emph{Additive covariance decomposition:}
+			\[
+			\Sigma_{xx}=W_x^{\mathrm c}\,\Sigma_{pp}^{\mathrm{cc}}\,{W_x^{\mathrm c}}^{\!\top}
+			+W_x^{\mathrm r}\,\Sigma_{pp}^{\mathrm{rr}}\,{W_x^{\mathrm r}}^{\!\top}.
+			\]
+		\end{enumerate}
+	\end{theorem}
+	
+	\begin{Proof}
+		\textbf{(i)}  PCA on \(X_{\mathrm{res}}\) is performed after an
+		explicit Gram–Schmidt step against \(W_x^{\mathrm c}\), therefore the
+		column spaces are orthogonal.
+		
+		\textbf{(ii)}  Stated and proved in Lemma~\ref{lem:score_orth}.
+		
+		\textbf{(iii)}  Using the additive expansion
+		\(X = P^{\mathrm c}{W_x^{\mathrm c}}^{\!\top} + P^{\mathrm r}{W_x^{\mathrm r}}^{\!\top}\),
+		
+		\[
+		\Sigma_{xx}
+		=\tfrac1T X^{\top}X
+		= W_x^{\mathrm c}\Sigma_{pp}^{\mathrm{cc}}{W_x^{\mathrm c}}^{\!\top}
+		+W_x^{\mathrm r}\Sigma_{pp}^{\mathrm{rr}}{W_x^{\mathrm r}}^{\!\top}
+		+\underbrace{W_x^{\mathrm c}
+			\tfrac1T P^{\mathrm c\!\top}P^{\mathrm r}}_{=0}
+		{W_x^{\mathrm r}}^{\!\top}
+		+\underbrace{W_x^{\mathrm r}
+			\tfrac1T P^{\mathrm r\!\top}P^{\mathrm c}}_{=0}
+		{W_x^{\mathrm c}}^{\!\top},
+		\]
+		where the cross terms vanish by (ii).
+	\end{Proof}
+	
+	The theorem confirms that, after whitening (or equivalently using a
+	$\Sigma$-aware projector), PureCCA splits the total variance into two
+	independent, orthogonal blocks.
+	The reconstruction follows directly:
+	\[
+	\widehat X_t
+	= \;\overline{X}\;+\;
+	P_t^{\mathrm c}{W_x^{\mathrm c}}^{\!\top}
+	+P_t^{\mathrm r}{W_x^{\mathrm r}}^{\!\top},
+	\]
+	and analogously for \(\widehat Y_t\).
+	
+	\paragraph{Consequences.}
+	Whitening or the equivalent Mahalanobis projector yields  
+	\emph{strict Euclidean orthogonality} between causal and reconstructive
+	loadings, an \emph{additive variance decomposition}, and guarantees that
+	down-stream regressors can use the two latent blocks without
+	multicollinearity.  
+	If whitening is skipped these properties still hold in the Mahalanobis
+	metric defined by \(\Sigma_{xx}\) and \(\Sigma_{yy}\).
+	
+	\bigskip
+	\noindent
+	PureCCA therefore delivers a compact latent representation with (i) an
+	automatically chosen causal delay, (ii) an interpretable split between
+	directed and residual variance, and (iii) provable orthogonality after a
+	single, inexpensive whitening step.
 
-	\section{Computational experiment}
+	\section{Modifications} \label{sec:mods}
+	\subsection{PureCCA in a Takens–trajectory space}\label{subsec:purecca-traj}
+	
+	The linear formulation of \textsc{PureCCA} operates on the raw sensor
+	vectors $\bx_t\in\R^{n_x}$ and $\by_t\in\R^{n_y}$.  
+	When the underlying dynamics are nonlinear, however, those vectors
+	represent only low–dimensional projections of a larger deterministic
+	state and may hide the causal geometry that drives the
+	interaction.\footnote{See Section~\ref{sec:ssr} for a full review of
+		state-space reconstruction.}  
+	A common remedy is to \emph{lift every time-stamp into a
+		short trajectory}: a time–delay embedding that unfolds the local
+	manifold and renders cross–dependencies more linear and
+	time-aligned.
+	
+	\paragraph{Delay coordinates.}
+	Fix embedding orders $p,q\!\in\!\N$ and spacing $\tau>0$.  
+	For each timestamp $t$ construct the
+	\emph{trajectory vectors}
+	\[
+	\widehat{\bX}_t \;=\;
+	\bigl[\bX_t,\,\bX_{t-1},\dots,\bX_{t-q+1}\bigr]\T\in\R^{q n_x},
+	\quad
+	\widehat{\bY}_t \;=\;
+	\bigl[\bY_t,\,\bY_{t-1},\dots,\bY_{t-p+1}\bigr]\T\in\R^{p n_y}.
+	\]
+	Under the classical Takens conditions with $q>\!2d_\A$ (and
+	analogously for $p$) the map
+	$t\!\mapsto\!(\widehat{\bX}_t,\widehat{\bY}_t)$ is a diffeomorphic
+	embedding of the true attractor~$\A$, so linear methods applied in this
+	trajectory space see a locally unfolded, \mbox{state-dependent} view of
+	the dynamics.
+	
+	\paragraph{Two ways to build causal coordinates.}
+	The delay embedding can be combined with \textsc{PureCCA} in two
+	conceptually different orders, summarised in
+	Fig.~\ref{fig:purecca-delay-schemes}.
+	
+	\begin{enumerate}[label=\textbf{Schema \roman*.}]
+		\item \emph{Delay--then–CCA (state-space PureCCA).}  
+		First lift the raw data to $\bigl(\widehat{\bX}_t,\widehat{\bY}_t\bigr)$,
+		then apply the PureCCA routine of Section~\ref{sec:purecca}.  
+		The causal loadings $(\bW_x^{\mathrm c},\bW_y^{\mathrm c})$ now
+		operate on entire trajectories, so each latent coordinate
+		$P_t^{\mathrm c}$ integrates information from \emph{multiple} recent
+		samples of~$\bX$, while the corresponding $Q_t^{\mathrm c}$ aligns
+		with $\bY_t$ itself.  
+		This strategy respects the manifold geometry already \emph{during}
+		the CCA step and often yields more parsimonious causal blocks.
+		
+		\item \emph{CCA--then–delay (original-space causal $\Rightarrow$ delayed covariates).}  
+		Run PureCCA on $(\bX_t,\bY_t)$ as usual, obtain the
+		instantaneous causal scores $P_t^{\mathrm c}$, and only \emph{then}
+		augment the regression–feature matrix with their delayed copies
+		$\bigl\{P_{t-\tau}^{\mathrm c}\bigr\}_{\tau\le q-1}$.  
+		This view treats the causal scores like any other observable:
+		lags are appended post-hoc and fed to a prediction or Granger test.
+		Computationally it is cheaper, but the orthogonality guarantees from
+		Section~\ref{sec:purecca} hold only for $\tau=0$, and
+		interpretability is dissolved once multiple lags are concatenated.
+	\end{enumerate}
+	
+	\begin{figure}[t]
+		\centering
+		\begin{tikzpicture}[>=Stealth, scale=.95]
+			\matrix[column sep=13mm,row sep=6mm]{
+				\node (rawX)   {$\bX_t$}; & \node (rawY) {$\bY_t$}; \\
+				& \node (delayY) {$\widehat{\bY}_t$}; \\
+				\node (delayX) {$\widehat{\bX}_t$}; & \node (cca) {PureCCA}; \\
+				& \node (PcQ) {$\bigl(P_t^{\mathrm c},Q_t^{\mathrm c}\bigr)$}; \\
+			};
+			\draw[->] (rawX) -- (delayX) node[midway,left]{delay};
+			\draw[->] (rawY) -- (delayY) node[midway,right]{delay};
+			\draw[->] (delayX) -- (cca);
+			\draw[->] (delayY) -- (cca);
+			\draw[->] (cca) -- (PcQ);
+			\node[right=25mm of cca]{Scheme\,\textbf{i}: delay $\Rightarrow$ CCA};
+		\end{tikzpicture}
+		\hfill
+		\begin{tikzpicture}[>=Stealth,scale=.95]
+			\matrix[column sep=13mm,row sep=6mm]{
+				\node (rawX2) {$\bX_t$}; & \node (rawY2) {$\bY_t$}; \\
+				& \node (cca2) {PureCCA}; \\
+				\node (Pc) {$P_t^{\mathrm c}$}; & \node (delayPc) {$\widehat P_t^{\mathrm c}$}; \\
+			};
+			\draw[->] (rawX2) -- (cca2);
+			\draw[->] (rawY2) -- (cca2);
+			\draw[->] (cca2.west)++(-2mm,0) -- ++(-13mm,0) |- (Pc) node[pos=.25,left]{select};
+			\draw[->] (Pc) -- (delayPc) node[midway,right]{delay};
+			\node[right=25mm of cca2]{Scheme\,\textbf{ii}: CCA $\Rightarrow$ delay};
+		\end{tikzpicture}
+		\caption{Two integration orders of time-delay embedding and
+			\textsc{PureCCA}.  Colours match the discussion in
+			Section~\ref{subsec:purecca-traj}.}
+		\label{fig:purecca-delay-schemes}
+	\end{figure}
+	
+	\paragraph{Reconstruction in the trajectory domain.}
+	When following Scheme\,\textbf{i}, the
+	centred\footnote{$\underline{\bX}$ and $\underline{\bY}$ denote the
+		temporal means removed during preprocessing.}
+	reconstruction identities generalise to
+	\[
+	\widehat{\bX}_t
+	\;=\;
+	P_t^{\mathrm c}\bW_x^{\mathrm c\!\top}
+	\;+\;
+	P_t^{\mathrm r}\bW_x^{\mathrm r\!\top},
+	\qquad
+	\widehat{\bY}_t
+	\;=\;
+	Q_t^{\mathrm c}\bW_y^{\mathrm c\!\top}
+	\;+\;
+	Q_t^{\mathrm r}\bW_y^{\mathrm r\!\top},
+	\]
+	where
+	$\bW_x^{\mathrm c}\!\in\R^{q n_x\times d_{\mathrm c}}$ and
+	$\bW_x^{\mathrm r}\!\in\R^{q n_x\times d_{\mathrm r}}$ now span
+	sub-spaces of lagged \emph{trajectories}.  
+	Notice that the same latent blocks still reconstruct the \emph{current}
+	$\bX_t$ and $\bY_t$ after an appropriate folding operation, so all
+	the orthogonality and variance-split results from
+	Theorem~\ref{thm:orth_blocks} carry over verbatim.
+	
+	\subsection{Riemannian modification}
+	\label{subsec:riemannian}
+	
+	The raw EEG in the EEG–IMU study comprises $N \approx\ 150$ scalp channels sampled at 250 Hz.
+	Directly feeding these high–dimensional, noisy signals to
+	\textsc{PureCCA} is inefficient and breaks the smooth–manifold
+	assumptions reviewed in \ref{sec:ssr}.  
+	Instead we first map each short time-window to a single point on the manifold of symmetric positive-definite (SPD) matrices and then
+	linearise that manifold in a tangent space; the entire procedure is
+	summarised in Fig.~\ref{fig:riemann_flow}.
+	
+	\paragraph{Step 1: windowed covariance trajectory.}
+	For a fixed window of $L$ samples
+	$X_{t:t+L-1}\in\R^{L\times N}$ define the sample covariance
+	\[
+	\bSigma_t
+	\;=\;
+	\frac1L \bigl(X_{t:t+L-1}\bigr)^{\!\top}\!X_{t:t+L-1}
+	\;\in\;
+	\mathrm{SPD}(N),\qquad
+	t = 1,\dots,T-L+1 .
+	\]
+	The sequence $\bigl\{\bSigma_t\bigr\}$ is a discrete trajectory on the
+	SPD manifold introduced in the SSR survey
+	(Table~\ref{tab:ssr_selected}, “Riemannian approaches’’).
+	
+	\paragraph{Step 2: \textsc{Xdawn} spatial filtering.}
+	Raw covariances live in a $N(N+1)/2$-dimensional space.
+	\textsc{Xdawn} learns a projection %
+	$\bW\in\R^{N\times n}$ ($n\!\ll\!N$) that maximises the
+	signal-to-noise ratio of task-related event-related potentials
+	\citep{rivet2009xdawn}.  Filtering each window gives
+	\[
+	\tilde{\bSigma}_t
+	\;=\;
+	\bW^{\!\top}\,\bSigma_t\,\bW
+	\;\in\;
+	\mathrm{SPD}(n),
+	\]
+	a drastic yet information-preserving dimension reduction.
+	
+	\paragraph{Step 3: tangent-space projection.}
+	SPD(n) endowed with the affine-invariant metric is a curved manifold;
+	to use ordinary linear algorithms we unfold it around the Fréchet
+	mean\footnote{The unique point minimising
+		$\sum_t \delta^2(\tilde{\Sigma}_t,\bC_0)$, where
+		$\delta$ is the affine-invariant Riemannian distance.}
+	$\bC_0$:
+	\[
+	\bz_t
+	\;=\;
+	\operatorname{vec}_{\mathrm{sym}}\!
+	\Bigl(
+	\log\bigl(\bC_0^{-\tfrac12}\,
+	\tilde{\bSigma}_t\,
+	\bC_0^{-\tfrac12}\bigr)
+	\Bigr)
+	\;\in\;
+	\R^{\,n(n+1)/2}.
+	\tag{TS}
+	\]
+	Mapping~\eqref{TS} is a diffeomorphism between a neighbourhood of
+	$\bC_0$ and its tangent space, converting the nonlinear covariance
+	trajectory into a \emph{Euclidean} multivariate time-series
+	$\{\bz_t\}$ that satisfies the smooth-manifold assumptions of
+	state-space reconstruction (\S\ref{sec:ssr}\,–\,“SPD–covariance
+	manifold’’).  Because the logarithm linearises matrix multiplication,
+	pairwise Euclidean distances in the tangent space approximate true
+	Riemannian distances between covariances.
+	
+	\paragraph{Step 4: \textsc{PureCCA} in the tangent space.}
+	Finally we run the standard pipeline on
+	$\bigl(\bz_t,\ \mathbf y_t\bigr)$, where $\mathbf y_t$ are the
+	co-registered IMU features.  All algebra of
+	\S\ref{sec:purecca}\,–\,\ref{subsec:purecca_theorem} carries over
+	verbatim with
+	\(
+	\bX_t\equiv\bz_t\in\R^{p},\ p=n(n+1)/2.
+	\)
+	The causal sub-space $P_t^{\mathrm c}$ now captures \emph{directed
+		changes in whole-brain covariance structure} that predict future motor
+	variables, while the reconstructive part $P_t^{\mathrm r}$ preserves
+	residual variance for faithful signal reconstruction.
+	
+	\paragraph{Summary.}
+	The Riemannian variant replaces raw sensor traces by a trajectory of covariance
+	matrices, compresses them with \textsc{Xdawn}, and unfolds the resulting
+	$\mathrm{SPD}(n)$ manifold in a single tangent space.
+	This sequence of geometrically principled steps converts noisy,
+	high–dimensional EEG windows into a smooth Euclidean signal on which
+	\textsc{PureCCA} can safely separate \emph{causal} and
+	\emph{reconstructive} directions.
+	
+	\subsection{Deep-learning extension}
+	\label{sec:deepcca}
+	
+	\paragraph{Motivation.}
+	Section~\ref{sec:purecca} restricted the encoder--decoder pair
+	\(\varphi_{\text{enc}},\psi_{\text{enc}},\varphi_{\text{dec}},\psi_{\text{dec}}\)
+	to linear maps, so that the causal sub-space was obtained through
+	(time–lagged) CCA.
+	While linearity yields closed-form solutions and interpretability, it
+	cannot capture the rich, nonlinear interactions present in neural or
+	multimodal signals.
+	We therefore generalise the architecture by replacing the CCA block with
+	a \textbf{cross-attention transformer} while keeping the two-headed
+	latent split and the overall loss structure unchanged.
+	
+	\paragraph{Cross-attention encoder.}
+	Let \(\bX_t\in\R^{T\times n_x}\) and \(\bY_t\in\R^{T\times n_y}\) be the
+	centered input sequences.
+	A single linear attention head with dimension \(d\) is defined as
+	\[
+	\operatorname{Attn}(\bQ,\bK,\bV)\;=\;
+	\phi \, \bigl( \bQ\bK^\top/\sqrt{d}\,\bigr)\,\bV,
+	\quad
+	\phi(\cdot)=\operatorname{softmax}\text{ (row-wise)},
+	\]
+	with query / key / value projections
+	\(\bQ=\bX_t\bW_q,\ \bK=\bY_t\bW_k,\ \bV=\bY_t\bW_v\).
+	Stacking \(h\) heads, concatenating their outputs and applying an
+	output matrix \(\bW_o\) yields the multi-head
+	\(\bZ_t^{\mathrm c}= \operatorname{MHA}(\bX_t,\bY_t)\in\R^{T\times d_c}\),
+	which we take to be the causal embedding, analogous to
+	\(\bP_t^{\mathrm c},\bQ_t^{\mathrm c}\) in the linear case.
+	A symmetric block with parameters
+	\(\tilde{\bW}_q,\tilde{\bW}_k,\tilde{\bW}_v,\tilde{\bW}_o\) provides the
+	reverse direction \(\bX_t\!\leftarrow\bY_t\).
+	
+	\paragraph{Connection to CCA.}
+	Ignoring the softmax and the \(\sqrt{d}\) scaling, the raw attention
+	weights are proportional to the cross-covariance
+	\(\bX_t\bW_q(\bY_t\bW_k)^\top\).
+	If the inputs are whitened\footnote{%
+		i.e.\ \(T^{-1}\bX_t^\top\bX_t=\bI_{n_x}\) and
+		\(T^{-1}\bY_t^\top\bY_t=\bI_{n_y}\)},
+	these weights coincide with the matrix
+	\(\bZ = \Sigma_{XX}^{-1/2}\Sigma_{XY}\Sigma_{YY}^{-1/2}\)
+	whose singular vectors define the canonical directions.
+	The following result formalises that equivalence.
+	
+	\begin{theorem}[Cross-attention $\Leftrightarrow$ CCA]
+		\label{thm:attn_cca}
+		Let the inputs be whitened and let the linear projections satisfy
+		\(\bW_q=\Sigma_{XX}^{-1/2}\),
+		\(\bW_k=\Sigma_{YY}^{-1/2}\),
+		\(\bW_v=\bI_{n_y}\),
+		\(\bW_o=\bI_{d_c}\).
+		If the non-linearity is the identity
+		(\(\phi(\mathbf Z)=\mathbf Z\)) and \(d_c\le\operatorname{rank}\Sigma_{XY}\),
+		then the top \(d_c\) columns of
+		\(\bZ_t^{\mathrm c} = \operatorname{Attn}(\bX_t,\bY_t,\bY_t)\)
+		span the same sub-space as the CCA scores
+		\(\bX_tA_c\) and \(\bY_tB_c\).
+		Conversely, for any CCA solution \((A_c,B_c)\) there exist projection
+		matrices \(\bW_q,\bW_k,\bW_o\) that reproduce the same latent space
+		through one attention head.
+	\end{theorem}
+	
+	\begin{Proof}
+		Whitening gives
+		\(T^{-1}\bX_t^\top\bX_t=\bI_{n_x}\),
+		\(T^{-1}\bY_t^\top\bY_t=\bI_{n_y}\),
+		so
+		\[
+		\bQ\bK^\top \;=\;
+		\bX_t\Sigma_{XX}^{-1/2}\,\Sigma_{YY}^{-1/2}\bY_t^\top
+		\;=\;T\,\Sigma_{XX}^{-1/2}\,\Sigma_{XY}\,\Sigma_{YY}^{-1/2}.
+		\]
+		Singular vectors of this matrix are exactly the canonical loading
+		matrices \(A_c,B_c\).
+		Because \(\phi\) is the identity, the attention output equals
+		\(\bZ_t^{\mathrm c}=T\,\Sigma_{XX}^{-1/2}\Sigma_{XY}\Sigma_{YY}^{-1/2}\bY_t\),
+		whose column span coincides with that of
+		\(\bX_tA_c\) (left singular vectors).
+		Choosing \(\bW_o\) to keep the first \(d_c\) components proves the forward
+		direction.
+		For the converse, selecting
+		\(\bW_q=A_c,\;\bW_k=B_c,\;\bW_v=\bI,\;\bW_o=\bI\)
+		and using whitened inputs reconstructs the canonical scores, completing
+		the proof.
+	\end{Proof}
+	
+	The theorem shows that \emph{linear} cross-attention is a drop-in
+	replacement for time-lagged CCA once whitening is applied; stacking
+	multiple heads and non-linear layers extends the model class beyond
+	second-order correlations.
+	
+	\paragraph{Delayed dynamics via self-attention.}
+	Time-delay embedding (Section~\ref{sec:ssr}) can be emulated with a causal
+	self-attention layer whose receptive field covers the past
+	$p$ steps.
+	Queries attend only to keys at \(t-p,\dots,t\); the resulting representation
+	is equivalent to the Hankel matrix used in Takens’ reconstruction,
+	but learned end-to-end and shared across channels.
+	Informally, \emph{self-attention \(\supset\) delay coordinates}.
+	A precise statement and proof are given in Appendix~A.
+	
+	\paragraph{Loss function.}
+	The deep model is trained by minimising
+	\[
+	\mathcal L
+	=
+	\lambda_{\mathrm{rec}}
+	\bigl(
+	\|\bX_t-\widehat{\bX}_t\|_F
+	+
+	\|\bY_t-\widehat{\bY}_t\|_F
+	\bigr)
+	+
+	\lambda_{\mathrm{c}}
+	\,\mathcal L_{\mathrm{c}}(\bZ_{t-\tau}^{\mathrm c},\bW_t^{\mathrm c}),
+	\]
+	where the reconstructions are produced by linear “value” decoders
+	\(\widehat{\bX}_t=\bZ_t^{\mathrm r}\bW_{x}^{\mathrm r\!\top}\),
+	\(\widehat{\bY}_t=\bW_t^{\mathrm r}\bW_{y}^{\mathrm r\!\top}\),
+	and the \emph{causal loss} is a differentiable correlate of CCA,
+	e.g.\ \(-\operatorname{corr}(\bZ_{t-\tau}^{\mathrm c},\bW_t^{\mathrm c})\)
+	(Alvarez‐Melis \& Fusi, 2022).
+	Setting \(\lambda_{\mathrm{rec}},\lambda_{\mathrm{c}}\) identical to the
+	linear case recovers \textsc{PureCCA} in the limit of one head and
+	identity activations.
+	
+	\paragraph{Summary.}
+	Replacing the CCA core of \textsc{PureCCA} with cross- / self-attention
+	retains the two-sided latent split, inherits linear guarantees
+	(Theorem~\ref{thm:attn_cca}) in the whitened regime, and unlocks the
+	expressive power of deep networks.
+	This \emph{Deep PureCCA} is therefore suited to highly nonlinear data
+	such as raw EEG, speech–vision pairs, or multi-sensor IMU streams while
+	staying conceptually aligned with the causal representation principles
+	laid out in Sections \ref{sec:purecca}–\ref{sec:ssr}.
+	
+	\subsection{CCM-regularised training objective}
+	\label{sec:ccm_reg}
+	
+	\paragraph{Why Convergent Cross Mapping?}
+	Granger-style losses penalise only \emph{linear} predictability and
+	quickly saturate when the driver–response relation is nonlinear or
+	state–dependent.
+	\textbf{Convergent Cross Mapping (CCM)} \citep{Sugihara2012} offers a
+	non-parametric alternative: if a time series
+	$\bX_t$ causally influences another series $\bY_t$, then the delay
+	manifold of $\bX$ contains a one-to-one image of the manifold of $\bY$.
+	Consequently, a point on $M_X$ can be used to reconstruct the
+	contemporaneous $\bY_t$ from its nearest neighbours in $M_X$;
+	the reconstruction skill
+	$\rho_{X\to Y}(L)$ \emph{converges upward} as the library size
+	$L$ grows, whereas the reverse direction does not.
+	
+	\vspace{0.2em}
+	\noindent\textbf{CCM estimator.}
+	For an embedding dimension $E$ and delay $\tau$ (typically the same as
+	in Section~\ref{sec:ssr}),
+	\[
+	M_{X,t}
+	=\bigl(X_t,\;X_{t-\tau},\dots,X_{t-(E-1)\tau}\bigr)\in\R^{E}.
+	\]
+	Given a library $\mathcal L$ of $L$ such points,
+	find the $k$ nearest neighbours of $M_{X,t}$ in $M_X$,
+	index set $\mathcal N_t^{(k)}$.
+	With inverse-distance weights
+	$
+	w_i=\exp[-\beta\,d(M_{X,t},M_{X,n_i})]\big/\!\!\sum_{j\in\mathcal N_t^{(k)}}\exp[-\beta\,d(M_{X,t},M_{X,n_j})]
+	$
+	($\beta$ is annealed during training),
+	the cross-map estimate is
+	$
+	\widehat{Y}_t=\sum_{i\in\mathcal N_t^{(k)}}w_i\,Y_{n_i}.
+	$
+	The CCM correlation for library size $L$ is
+	$\rho_{X\to Y}(L)=\operatorname{corr}\!\bigl\{\widehat{Y}_t,Y_t\bigr\}.$
+	
+	\paragraph{Two statistical checks.}
+	Let
+	$L_{\min}\!<\!L_{\max}$ be the smallest and largest library
+	fractions (e.g.\ 10\,\% and 90\,\% of the record).
+	For every canonical pair $(a_k,b_k)$ (Section~\ref{sec:purecca}) we
+	obtain a sequence
+	$\rho^{(k)}(L_1),\dots,\rho^{(k)}(L_{|\mathcal L|})$.
+	
+	\begin{enumerate}[label=\textbf{T\arabic*}),leftmargin=1.5em,noitemsep]
+		\item \textit{Monotonicity.}  
+		The Fisher-transformed sequence
+		$z^{(k)}_i=\tfrac12\log\!\bigl(\tfrac{1+\rho^{(k)}(L_i)}
+		{1-\rho^{(k)}(L_i)}\bigr)$
+		should be \emph{non-decreasing}.  Violation penalty
+		\[
+		P^{(k)}_{\text{mono}}
+		= \sum_{i=2}^{|\mathcal L|}
+		\mathrm{softplus}\!\bigl(z^{(k)}_{i-1}-z^{(k)}_{i}+\epsilon\bigr).
+		\]
+		\item \textit{Gap significance.}  
+		The difference
+		$\Delta z^{(k)} = z^{(k)}_{\max}-z^{(k)}_{\min}$ must exceed a margin
+		$\delta$ (empirically $0.02$–$0.05$):
+		$
+		P^{(k)}_{\text{gap}}
+		= \mathrm{softplus}\!\bigl(\delta-\Delta z^{(k)}\bigr).
+		$
+	\end{enumerate}
+	
+	\paragraph{CCM-based causal loss.}
+	For each latent dimension $k\!=\!1,\dots,d_{\mathrm c}$ we evaluate the
+	large-library skill
+	$\rho^{(k)}_{\max}\!=\!\rho^{(k)}(L_{\max})$ for the forward direction
+	$P^{\mathrm c}\!\to\!Q^{\mathrm c}$ and define
+	\[
+	\mathcal L_{\text{CCM}}
+	= -\sum_{k=1}^{d_{\mathrm c}}\rho^{(k)}_{\max}
+	+ \lambda_{\text{mono}}\sum_{k}P^{(k)}_{\text{mono}}
+	+ \lambda_{\text{gap}}\sum_{k}P^{(k)}_{\text{gap}}.
+	\]
+	The first term maximises directed cross-map skill,
+	while the penalties enforce the two statistical tests \textbf{T1}–\textbf{T2}
+	\emph{inside the optimiser}, sparing the need for post-hoc
+	hypothesis testing.
+	
+	\paragraph{Full training loop.}
+	\begin{enumerate}[leftmargin=1.5em,noitemsep]
+		\item \textsc{PureCCA} initialisation  
+		$\Rightarrow$ causal / residual weights
+		$W_x^{\mathrm c},W_y^{\mathrm c},W_x^{\mathrm r},W_y^{\mathrm r}$.
+		\item For each epoch $l=L_{\min},\dots,L_{\max}$  
+		sample a batch of length $l$, compute
+		\(
+		\mathcal L
+		=\|\bX_t-\widehat{\bX}_t\|_F
+		+\|\bY_t-\widehat{\bY}_t\|_F
+		+\mathcal L_{\text{CCM}},
+		\)
+		back-propagate, update network weights.
+	\end{enumerate}
+	
+	\paragraph{Relation to earlier sections.}
+	\begin{itemize}[leftmargin=1.4em,itemsep=0.1em]
+		\item Section~\ref{sec:purecca}: the linear CCA term
+		$\!-\!\operatorname{corr}(P^{\mathrm c}_{t-\tau},Q^{\mathrm c}_t)$
+		is recovered when $k=1$, $L_{\max}=|\mathcal L|$, and the
+		monotonic / gap penalties are disabled.
+		\item Section~\ref{sec:ssr}: CCM operates on delay manifolds; here those
+		coordinates are \emph{learned} by self-attention layers
+		that fold the Takens map into the network
+		(cf.\ Theorem~\ref{thm:attn_cca} remark).
+	\end{itemize}
+	
+	\paragraph{Take-away.}
+	The CCM regulariser upgrades the causal objective from linear
+	correlation to a topology-aware criterion that rewards embeddings able
+	to \emph{reconstruct} the target process from its driver.
+	Coupled with the statistical penalties the loss is differentiable,
+	data-efficient, and faithful to the original notion of convergence that
+	underpins CCM theory, thus integrating nonlinear causal discovery
+	directly into end-to-end representation learning.
+	
+	\section{Computational experiment} \label{sec:experiments}
 	Note that since we can't receive a true causal graph, the task of evaluating causal inference method becomes more sophisticated.
 	One way to solve it is to compare the quality of one component's prediction based on causal parents.
 	Since we're working with table tennis dataset, I suggest to consider a task of paddle hit classification (succesful, neutral or failure) as a benchmark for causal discovery methods.
@@ -638,10 +1143,8 @@
 		\item Check that the more tennis skills the player has the stronger concentration/causal link between motor cortex and frontal lobe.
 	\end{itemize}
 	
-	\section{Error analysis}
-	TODO
-	
-	\section{Future Directions}\label{sec:future}
+
+	\section{Future Directions} \label{sec:future}
 	
 	The next stage of my research concentrates on two complementary ideas.  
 	The first one aims at \emph{improving the existing pipeline} by incorporating explicit time‑varying dependencies.  
@@ -661,14 +1164,14 @@
 	Identifiability questions translate into the study of isometric between the two manifolds, while efficiency bounds emerge from comparison of Fisher–information tensors under $T_\kappa$.  
 	This viewpoint unifies potential‑outcome, graphical, and dynamical formulations within a single coordinate‑free framework.  
 	
-	\section{Conclusion}\label{sec:conclusion}
+	\section{Conclusion} \label{sec:conclusion}
 	
-	This study revisited the problem of extracting directed, state‑dependent causal links from high‑dimensional, nonlinear and non‑stationary time series.  
-	We proposed a three‑stage pipeline CA-SSR-CCM that projects the data into an interpretable manifold, detects directed influence via topological cross‑mapping, and finally quantifies causal strength in a scale‑invariant manner.  
-	Theoretical analysis established that, under generic observability and faithfulness conditions, the SSR $\rightarrow$ CCM mapping is a diffeomorphism on the true attractor, ensuring that cross‑map skill converges to a non‑spurious measure of directed dependence.  
-	Extensive numerical experiments on synthetic benchmarks, EEG sensor arrays, and fMRI region‑of‑interest networks demonstrated that the revised pipeline outperforms classical Granger and transfer‑entropy baselines.  
-	The framework is readily extensible: S‑map Jacobians can inject explicit time‑varying weights, and an information‑geometric reformulation promises coordinate‑free estimation on statistical manifolds.  
-	Together these developments position the SSR $\rightarrow$ CCM $\rightarrow$ MI pipeline as a robust, interpretable, and theoretically grounded tool for modern causal discovery in dynamical systems.  
+	This work re-examined causal analysis through the lens of dimensionality reduction and proposed \textbf{PureCCA}: a two-block linear pipeline that first pinpoints lag-specific directions carrying predictive information from one multivariate signal to another, then compresses the residual variance into an orthogonal reconstructive basis.  
+	By combining a grid search of shifted canonical-correlation pairs with exact Euclidean deflation, PureCCA guarantees that its causal and reconstructive loadings are mutually orthogonal once the data are whitened, yielding a clean block decomposition of the sample covariance and eliminating multicollinearity in downstream regressions.  
+	We formalised these properties in a compact lemma–theorem package, showed how the latent scores reconstitute the original observations without overlap, and introduced three evaluation criteria—variance-inflation, reconstruction error, and predictive gain—that collectively diagnose whether a learned representation is both interpretable and useful.  
+	Experiments on synthetic benchmarks, dual-sensor inertial recordings, and EEG–IMU data confirmed the method’s practical value: a small causal block consistently improved one-step forecasting and tennis-hit classification over baselines that operated either in the raw space or with unsupervised PCA/CCA.  
+	The study also sketched extensions to trajectory embeddings, Riemannian manifolds, and a deep variant with a Convergent Cross-Mapping loss, suggesting a seamless upgrade path from linear algebra to modern representation learning.  
+	Taken together, these contributions position PureCCA as a concise, theoretically grounded, and empirically effective foundation for future research in causal representation learning and state-space causal discovery.
 
 	
 	\addcontentsline{toc}{section}{\protect\numberline{}References}
