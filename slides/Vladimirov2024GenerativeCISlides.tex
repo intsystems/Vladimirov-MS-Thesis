@@ -109,7 +109,7 @@
 \renewcommand{\emptyset}{\varnothing}
 
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows,calc}
+\usetikzlibrary{positioning,arrows.meta,calc}
 %\tikzstyle{naeme} = [parameters]
 \definecolor{name}{rgb}{0.5,0.5,0.5}
 
@@ -121,7 +121,7 @@
 \usepackage{caption}
 \captionsetup{skip=0pt,belowskip=0pt}
 
-\newtheorem{rustheorem}{Теорема}
+\newtheorem{rustheorem}{Теорема Владимирова}
 \newtheorem{russtatement}{Утверждение}
 \newtheorem{rusdefinition}{Определение}
 
@@ -164,15 +164,14 @@
 	
 	\begin{alertblock}{Цель исследования}
 		Найти компактное и интерпретируемое скрытое пространство,
-		в котором причинное воздействие $\bX \rightarrow \bY$
-		обнаруживается устойчиво и статистически значимо.
+		в котором обнаруживается причинное воздействие $\bX \rightarrow \bY$.
 	\end{alertblock}
 
 	  \begin{alertblock}{Предлагаемая модель \textbf{CaSCA}}
 	  	Предлагается подход CaSCA -- Канонический анализ каузальных подпространств.
 	  	
 	  	CaSCA проецирует данные на два взаимно ортогональных подпространства: \textbf{каузальное}, где лагированное представление $\bX$ 
-	  	максимально предсказывает $\bY$, и \textbf{реконструктивное}, которое объясняет оставшуюся дисперсию сигналов.
+	  	максимально предсказывает $\bY$, и \textbf{реконструктивное}, которое объясняет остаточную дисперсию сигналов.
 		
 	\end{alertblock}
 \end{frame}
@@ -181,7 +180,7 @@
 \begin{frame}{Основная идея метода CaSCA}
 
 	\textbf{Ключевая мысль:} \\
-	\emph{CaSCA строит общее латентное пространство, где первом этапе извлекаются низкоразмерные причинные компоненты, а во втором — восстанавливается остальная вариативность данных.}
+	\emph{CaSCA строит общее латентное пространство, где на первом этапе извлекаются низкоразмерные причинные компоненты, а на втором — восстанавливается остальная вариативность данных.}
 \end{frame}
 
 %--------------------------------------------------------------------------------------------------------
@@ -236,7 +235,7 @@
 	
 	\textbf{Задача моделирования}
 	
-	Найти преобразования $\varphi_{\text{enc}}, \psi_{\text{enc}}, \varphi_{\text{dec}}, \psi_{\text{dec}}$ и задержку \(\tau^\star\),  
+	Найти преобразования $\varphi_{\text{enc}}, \psi_{\text{enc}}, \varphi_{\text{dec}}, \psi_{\text{dec}}$,  
 	минимизируя
 	\[
 	\mathcal{L}
@@ -250,14 +249,14 @@
 	\!\bigl(\bP_{t-\tau}^{\mathrm c},\bQ_t^{\mathrm c}\bigr),
 	\]
 	\begin{itemize}
-		\item[-] $\mathcal{L}_{\text{c}}$ — любая мера зависимости (корреляция/CCM).
-		\item[-] Сканируем $\tau=[0, \ldots, \tau_{\max}]$, чтобы найти задержку.
+		\item[-] $\mathcal{L}_{\text{c}}$ — критерий причинно-следственной связи (корреляция/CCM/MI).
 	\end{itemize}
 	
 	\textbf{Предположения.}
 	\begin{itemize}
 		\item[-] Аттрактор допускает задержанное вложение при умеренном шуме.
 		\item[-] Вся значимая причинная информация содержится в $d_c$-мерном подпространстве.
+		\item[-] Задержка $\tau$ заранее известна.
 	\end{itemize}
 \end{frame}
 
@@ -355,7 +354,7 @@
 
 \begin{frame}{Теоретические свойства модели CaSCA}
 	
-	\begin{rustheorem}[ортогональность и блочная дисперсия]
+	\begin{rustheorem}[2025, ортогональность и блочная дисперсия]
 		Пусть после центрирования данные приведены к единичной ковариации  
 		$\Sigma_{XX}=I_p,\;\Sigma_{YY}=I_q$. 
 		Тогда проекции $\bP_t^c, \bP_t^r$ и ортогональные веса $\bW_x^c, \bW_x^r$ модели обладают следующими свойствами:
@@ -378,8 +377,8 @@
 	\textbf{Интерпретация.}
 	\begin{itemize}
 		\item[] Причинные оси $\bW^{\mathrm c}$ изолируют подпространство, достаточное для прогноза $\bY_t$ по $\bX_{t-\tau}$.
-		\item[] Реконструктивные оси $W^{\mathrm r}$ содержат оставшуюся дисперсию, не мешая оценке причинных связей.
-		\item[] Блочное разложение дисперсии упрощает downstream-модели:  
+		\item[] Реконструктивные оси $W^{\mathrm r}$ содержат остаточную дисперсию, не мешая оценке причинных связей.
+		\item[] Блочное разложение дисперсии упрощает прикладные модели:  
 		$\bP_t^{\mathrm c}$ используется в регрессии/классификации,  
 		$\bP_t^{\mathrm r}$ — в реконструкции и фильтрации шума.
 	\end{itemize}
@@ -387,9 +386,9 @@
 
 
 %------------------------------------------------------------
-\begin{frame}{Расширение 1: переход в траекторное пространство}
+\begin{frame}{Переход в траекторное пространство}
 	Вместо исходных наблюдений $\bX_t,\bY_t$ строим их отложенные векторы и применяем \textbf{CaSCA} уже к этим псевдонаблюдениям.
-	Это раскрывает внутреннюю динамику системы и улучшает выявление причинных лагов.
+	Это раскрывает внутреннюю динамику системы и улучшает выявление причинных связей.
 	
 %	\vspace{0.8ex}
 	\begin{algorithmic}[1]
@@ -417,366 +416,391 @@
 \end{frame}
 %------------------------------------------------------------
 
-\begin{frame}{Расширение 1: переход в траекторное пространство}
-			%---------- right: diagram ----------
-	\begin{center}
-		\begin{tikzpicture}[>=latex,rounded corners,%
-			node distance=6mm and 10mm,
-			every node/.style={font=\footnotesize}]
-			% raw streams
-			\node (X) {$\bX_t$};
-			\node[right=of X] (Y) {$\bY_t$};
-			
-			% trajectory builder
-			\node[draw,below=of $(X)!0.5!(Y)$,minimum width=30mm] (traj)
-			{lag space};
-			
-			% trajectory outputs
-			\node[below left=of traj] (Xt) {$\bX^{\mathrm{traj}}_t$};
-			\node[below right=of traj] (Yt) {$\bY^{\mathrm{traj}}_t$};
-			
-			% CaSCA block
-			\node[draw,below=of traj,minimum width=40mm] (casc)
-			{CaSCA};
-			
-      % latent outputs: опускаем на 10 мм ниже каска
-			\node[left=20mm of casc, below=10mm of casc] (Pc) {$\bP_t^{\mathrm c}$};
-			\node[left=6mm  of Pc, below=10mm of casc] (Pr) {$\bP_t^{\mathrm r}$};
-			
-			\node[right=20mm of casc, below=10mm of casc] (Qc) {$\bQ_t^{\mathrm c}$};
-			\node[right=6mm  of Qc, below=10mm of casc] (Qr) {$\bQ_t^{\mathrm r}$};
-			
-			% arrows
-			\draw[->] (X) -- (traj);
-			\draw[->] (Y) -- (traj);
-			\draw[->] (traj) -- (Xt);
-			\draw[->] (traj) -- (Yt);
-			\draw[->] (Xt)  -- (casc);
-			\draw[->] (Yt)  -- (casc);
-			\draw[->] (casc) -- (Pc);
-			\draw[->] (casc) -- (Qc);
-		\end{tikzpicture}
-	\end{center}
+\begin{frame}{Переход в траекторное пространство}
+
+\begin{center}
+	\begin{tikzpicture}[
+		every node/.style={font=\footnotesize, align=center},
+		>=Stealth,                    % <-- используем Stealth-стрелки
+		node distance=8mm and 12mm    % базовый отступ между узлами
+		]
+		% Исходные ряды X_t, Y_t
+		\node (X) {$\bX_t$};
+		\node[right=of X] (Y) {$\bY_t$};
+		
+		% Блок построения лагового пространства
+		\node[draw, below=of $(X)!0.5!(Y)$, minimum width=30mm] (lag) {Lag space};
+		
+		% Выходы (которые являются задержанными траекториями)
+		\node[below left=of lag] (Xtraj) {$\bX_t^{\mathrm{traj}}$};
+		\node[below right=of lag] (Ytraj) {$\bY_t^{\mathrm{traj}}$};
+		
+		% Блок CaSCA
+		\node[draw, below=of lag, minimum width=40mm, yshift=-3mm] (casc) {CaSCA};
+		
+		% Латентные (скрытые) компоненты
+		% В качестве примера выносим их на одну линию ниже CaSCA
+		\node[below left=of casc, xshift=8mm, yshift=-2mm] (Pc) {$\bP_t^{\mathrm c}$};
+		\node[below right=of casc, xshift=-8mm, yshift=-2mm] (Qc) {$\bQ_t^{\mathrm c}$};
+		
+		% Для наглядности (необязательно):
+		\node[below=of Pc] (Pr) {$\bP_t^{\mathrm r}$};
+		\node[below=of Qc] (Qr) {$\bQ_t^{\mathrm r}$};
+		
+		% Рисуем стрелки
+		\draw[->] (X) -- (lag);
+		\draw[->] (Y) -- (lag);
+		\draw[->] (lag) -- (Xtraj);
+		\draw[->] (lag) -- (Ytraj);
+		
+		\draw[->] (Xtraj) -- (casc);
+		\draw[->] (Ytraj) -- (casc);
+		
+		\draw[->] (casc) -- (Pc);
+		\draw[->] (casc) -- (Qc);
+		\draw[->] (Pc) -- (Pr);
+		\draw[->] (Qc) -- (Qr);
+	\end{tikzpicture}
+\end{center}
 
 	\vspace{0.4ex}
-	\begin{itemize}
-		\item[] Выигрыш: фазовое пространство Такенса «распутывает» нелинейные зависимости, и CaSCA находит «чистые» причинные координаты даже при длинных лагах.
-		\item[] Параметры $E,\tau$ подбираются \emph{autocorrelation} или \emph{false-nearest-neighbors}.
-	\end{itemize}
+	\textbf{Преимущество}: вложение Таккенса отображает исходные временные ряды в траекторное пространство, где нелинейные и запаздывающие взаимодействия становятся линейно отделимыми.
+	В этом пространстве CaSCA извлекает ортогональные причинные координаты даже при больших лагах.
 \end{frame}
 
-\begin{frame}{Расширение 2: Риманово скрытое пространство}
+\begin{frame}{Переход в Риманово пространство}
 	\small
 	\begin{columns}[T]
 		%---------- LEFT  --------------------------------
-		\begin{column}{0.55\textwidth}
-			\begin{block}{Мотивация}
-				\begin{itemize}\setlength{\itemsep}{3pt}
-					\item EEG-сигналы многоканальны, шумны и содержат коррелированные компоненты.
-					\item Ковариационные матрицы каналов естественно живут на многообразии SPD$(n)$.
-					\item Проекция в касательное пространство = «локальная евклидизация»: работает линейная CaSCA.
-				\end{itemize}
-			\end{block}
-			
-			\begin{block}{Пошаговый алгоритм}
-				\small
-				\begin{enumerate}\setlength{\itemsep}{2pt}
-					\item \textbf{XdawnCovariance.}\;  
-					Из $N$ каналов формируем $n\! \ll\! N$ пространственных паттернов  
-					$\,\bSigma_t\!\in\!\operatorname{SPD}(n)$ внутри окна $\Delta t$.
-					\item \textbf{Log-Tangent.}\;
-					$$\bC_t=\log\!\bigl(\bSigma_\star^{-1/2}\,\bSigma_t\,\bSigma_\star^{-1/2}\bigr)
-					\;\in\;T_{\bSigma_\star}\operatorname{SPD}(n),$$
-					где $\bSigma_\star$ — геометрическое среднее.
-					\item \textbf{Сдвиг-матр. задержек.}\;
-					Строим траекторию ${\bC}_{t,\tau}=[\bC_t,\,\bC_{t-\tau},\dots]$ и нормируем.
-					\item \textbf{CaSCA.}\;  
-					Применяем алгоритм из предыдущего слайда к парам 
-					$(\bC^X_{t,\tau},\;\bC^Y_{t,\tau})$ $\Rightarrow$
-					получаем причинные и реконструктивные эмбеддинги.
-				\end{enumerate}
-			\end{block}
-		\end{column}
+	\begin{column}{0.55\textwidth}
+		\begin{block}{Мотивация}
+			\begin{itemize}\setlength{\itemsep}{3pt}
+				\item EEG-сигналы многоканальны, шумны и содержат коррелированные компоненты.
+				\item Ковариационные матрицы каналов естественно живут на многообразии SPD$(n)$.
+				\item Проекция в касательное пространство = «локальная евклидизация»: работает линейная CaSCA.
+			\end{itemize}
+		\end{block}
 		
-		%---------- RIGHT  -------------------------------
-		\begin{column}{0.43\textwidth}
+		\begin{block}{Пошаговый алгоритм}
+			\small
+			\begin{enumerate}\setlength{\itemsep}{2pt}
+				\item \textbf{XdawnCovariance.}\;  
+				Из $N$ каналов формируем $n\! \ll\! N$ пространственных паттернов  
+				$\,\bSigma_t\!\in\!\operatorname{SPD}(n)$ внутри окна $\Delta t$.
+				\item \textbf{Log-Tangent.}\;
+				$$\bC_t=\log\!\bigl(\bSigma_\star^{-1/2}\,\bSigma_t\,\bSigma_\star^{-1/2}\bigr)
+				\;\in\;T_{\bSigma_\star}\operatorname{SPD}(n),$$
+				где $\bSigma_\star$ — геометрическое среднее.
+				\item \textbf{Сдвиг-матр. задержек.}\;
+				Строим траекторию ${\bC}_{t,\tau}=[\bC_t,\,\bC_{t-\tau},\dots]$ и нормируем.
+				\item \textbf{CaSCA.}\;  
+				Применяем алгоритм из предыдущего слайда к парам 
+				$(\bC^X_{t,\tau},\;\bC^Y_{t,\tau})$ $\Rightarrow$
+				получаем причинные и реконструктивные эмбеддинги.
+			\end{enumerate}
+		\end{block}
+	\end{column}
+	
+	%---------- RIGHT  -------------------------------
+	\begin{column}{0.43\textwidth}
 %			\begin{center}
 %				\includegraphics[width=\linewidth]{figures/riem_traj.pdf}
 %			\end{center}
-			\begin{varblock}[0.9\linewidth]{Ключевая идея}
-				Ковариации EEG являются точками на кривой SPD-многообразия;  
-				перевод в касательное пространство делает их «плоскими»,  
-				после чего CaSCA отделяет \textit{динамически-причинные} направления  
-				от \textit{реконструктивного шума}.
-			\end{varblock}
-			
-			\vspace{0.2em}
-			\begin{varblock}{Итоговые преимущества}
-				\begin{itemize}\setlength{\itemsep}{2pt}
-					\item[] Устойчивость к масштабированию и к артефактам отдельных электродов.
-					\item[] Геометрически корректная обработка SPD-данных.
-					\item[] Улучшенная предсказательная точность $\uparrow$ (см. раздел экспериментов).
-				\end{itemize}
-			\end{varblock}
-		\end{column}
+		\begin{varblock}[0.9\linewidth]{Ключевая идея}
+			Ковариации EEG являются точками на кривой SPD-многообразия;  
+			перевод в касательное пространство делает их «плоскими»,  
+			после чего CaSCA отделяет \textit{динамически-причинные} направления  
+			от \textit{реконструктивного шума}.
+		\end{varblock}
+		
+		\vspace{0.2em}
+		\begin{varblock}{Итоговые преимущества}
+			\begin{itemize}\setlength{\itemsep}{2pt}
+				\item[] Устойчивость к масштабированию и к артефактам отдельных электродов.
+				\item[] Геометрически корректная обработка SPD-данных.
+				\item[] Улучшенная предсказательная точность $\uparrow$ (см. раздел экспериментов).
+			\end{itemize}
+		\end{varblock}
+	\end{column}
 	\end{columns}
 \end{frame}
-
-\begin{frame}{Расширение CaSCA на глубокие сети}
-	\small
-	Заменяем линейную пару $\varphi_{\mathrm{enc}},\psi_{\mathrm{enc}}$ на двухголовый \textbf{Cross-Attention}  (CA) --  она одновременно учится находить канонические представления,  реализует задержки благодаря механизмам self-attention.
-	
-	\begin{varblock}{Модель \textit{Deep-CaSCA}}
-		\vspace{-0.2em}
-		\begin{enumerate}
-			\item[] \textbf{Кодеры}:  
-			$(P_t^{c},P_t^{r})=\Phi_{\theta}(\!\bX_{1:t}),\;
-			(Q_t^{c},Q_t^{r})=\Psi_{\theta}(\!\bY_{1:t})$ — трансформеры с CA-блоками.  
-			\item[] \textbf{Декодеры}:  
-			$\widehat{\bX}_t=\Phi^{-1}_{\theta}(P_t^{r}),\;
-			\widehat{\bY}_t=\Psi^{-1}_{\theta}(Q_t^{r})$.  
-			\item[] \textbf{Функция потерь}:  
-			\[
-			\mathcal L \;=\; \lambda_{\text{rec}}
-			\bigl[\!\| \bX-\widehat{\bX}\|_F + \| \bY-\widehat{\bY}\|_F \bigr]\;
-			+\;\lambda_{\text{c}}\,
-			\underbrace{ \bigl(1-\text{corr}(P^{c},Q^{c})\bigr) }_{\text{\scriptsize «CCM–loss»}}
-			\]
-			где \texttt{corr} вычисляется батчево.
-		\end{enumerate}
-	\end{varblock}
-\end{frame}
-
-
-\begin{frame}{Расширение CaSCA на глубокие сети}
-	\begin{rustheorem}[Эквивалентность CA и CCA]
-		Пусть $\,\mathrm{CA}_k(\bX,\bY)$ — одноголовая cross-attention без нелинейностей c $k$ ключами.  
-		Если \,$\bX,\bY$ предварительно whiten‐ированы, то  
-		выходные представления \,$U=\mathrm{CA}_k(\bX,\bY),\;V=\mathrm{CA}_k(\bY,\bX)$  
-		максимизируют выборочную корреляцию так же, как первые $k$ канонических пар CCA.
-	\end{rustheorem}
-	\vspace{-0.5em}
-	Cross-attention обучается поворачивать скрытое пространство так, чтобы каждая голова совпадала с каноническим направлением; сам механизм self-attention неявно реализует сдвиги $\bX_{t-\tau}$ $\!\!\rightarrow$ $\bX_{t}$.
-\end{frame}
-%------------------------------------------------------------
-
-%--------------------------------------------------
-\begin{frame}{Регуляризатор Сугихары: вспоминаем метод}
-	\begin{varblock}{Сходящийся перекрестный анализ}
-			\textbf{Теневое вложение:}
-		\[
-		M_{X,t}
-		= 
-		\bigl(
-		X_t,\,
-		X_{t-\tau},\,
-		\dots,\,
-		X_{t-(E-1)\tau}
-		\bigr)
-		\;\in\;\mathbb{R}^E,
-		\]
-		где $E$ --- размерность вложения, $\tau$ --- временной лаг. 
-		%Аналогично задаётся $M_{Y,t} = \bigl(Y_t,\,Y_{t-\tau},\,\dots\bigr).$
-		
-		\vspace{1em}
-		\textbf{Реконструкция:}
-		\[
-		\widehat{Y}_t | M_{X, t}
-		=
-		\sum_{i=1}^{k}
-		w_i\,
-		Y_{n_i},
-		\]
-		здесь $n_i$ --- индексы ближайших соседей точки $M_{X,t}$ в пространстве $M_X$, а $w_i$ --- веса, зависящие от расстояния до $M_{X,t}$.
-		
-		\vspace{1em}
-		\textbf{Критерий причинности:}
-		\[
-		\rho_{X\to Y}
-		=
-		\mathrm{corr}\!\Bigl( Y_t, \widehat{Y}_t | M_{X, t} \Bigr).
-		\]
-		Если при увеличении размера ``библиотеки'' (множества рассматриваемых соседей) $\rho_{X \to Y}$ \emph{сходится монотонно}, считается, что $\mathbf{X}(t)$ влияет на $\mathbf{Y}(t)$.
-	\end{varblock}
-\end{frame}
-
-
-\begin{frame}{Регуляризатор Сугихары: статистические тесты сходимости}
-	Проверяем, что $\rho_{X\to Y}(L)$ \;«устойчиво растёт» при увеличении длины библиотеки $L$
-	\begin{itemize}
-		\item[] \textbf{Шаг 1.} Формируем последовательность оценок
-		\[
-		\rho_{X\to Y}(L_0),\;
-		\rho_{X\to Y}(L_1),\dots,
-		\rho_{X\to Y}(L_{\max}), \quad
-		L_0=E,\;L_{\max}=T .
-		\]
-		\item[] \textbf{Шаг 2.} \emph{Тест Кендалла $\tau$}  
-		— проверяем наличие значимого монотонного тренда  
-		$\rho_{X\to Y}(L_i)\nearrow$ при росте $L_i$.
-		
-		\[
-		H_0:\;\tau=0
-		\quad\Longrightarrow\quad
-		p_{\tau} < \alpha \;\;\text{(тренд есть)}
-		\]
-		
-		\item[] \textbf{Шаг 3.} \emph{Тест Фишера $\Delta\!Z$}  
-		— оцениваем, отличается ли
-		$\rho_{X\to Y}(L_{\max})$  
-		от  $\rho_{X\to Y}(L_{0})$ статистически значимо:
-		
-		\[
-		Z  \;=\; 
-		\frac{\operatorname{atanh}\rho(L_{\max})-\operatorname{atanh}\rho(L_{0})}
-		{\sqrt{\dfrac{1}{\,L_{\max}-3}+\dfrac{1}{\,L_{0}-3}}}, 
-		\qquad
-		p_{Z}<\alpha .
-		\]
-		
-		\item[] \textbf{Решение.}  Считаем кросс-мап подтверждённым, 
-		если одновременно \(p_{\tau}\) и \(p_{Z}\) меньше порога~\(\alpha\)
-		(обычно \(\alpha=0.05\)).
-	\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Регуляризатор Сугихары: обучение с учётом динамики}
-%	\begin{varblock}{Зачем нужен регуляризатор ССМ?}
-%		\begin{itemize}
-%			\item[] Стандартная корреляция фиксирует лишь <<статические>> связи.  
-%			\item[] CCM проверяет \textbf{динамическую} причинность:  
-%			насколько траектория $M_{X,t}$ предсказывает $Y_t$ при
-%			увеличении размера библиотеки $L$.
-%			\item[] Включаем $-\rho_{X\to Y}(L_{\max})$ в целевую функцию,  
-%			чтобы модель \emph{конструктивно} усиливала истинную
-%			направленную зависимость.
-%		\end{itemize}
-%	\end{varblock}
 %
-%% ---------- RIGHT COLUMN : алгоритм ----------
-%	\begin{varblock}{Алгоритм обучения (псевдокод)}
-%		\begin{algorithmic}[1]
-%			\State \textbf{Input:} $\;X_t,\,Y_t;\,$ параметры сети
-%			\For{epoch = 1 \textbf{to} $E$}
-%			\State $P_t,\,Q_t \leftarrow$ encoders$(X_t,Y_t)$
-%			\State $\hat X_t,\hat Y_t \leftarrow$ decoders$(P_t,Q_t)$
-%			\State \textcolor{darkgreen}{$\rho \leftarrow$ CCM}\big($P_{t-\tau}^c,\,Q_t^c\big)$
-%			\State $\mathcal L_{\text{rec}} \gets
-%			||X-\hat X||_F + ||Y-\hat Y||_F$
-%			\State $\mathcal L \gets
-%			\lambda_{\text{rec}}\mathcal L_{\text{rec}}
-%			-\lambda_{\text{ccm}}\rho$
-%			\State back-propagate\;$(\mathcal L)$
-%			\EndFor
-%		\end{algorithmic}
+%\begin{frame}{Расширение CaSCA на глубокие сети}
+%	\small
+%	Заменяем линейную пару $\varphi_{\mathrm{enc}},\psi_{\mathrm{enc}}$ на двухголовый \textbf{Cross-Attention}  (CA) --  она одновременно учится находить канонические представления,  реализует задержки благодаря механизмам self-attention.
+%	
+%	\begin{varblock}{Модель \textit{Deep-CaSCA}}
+%		\vspace{-0.2em}
+%		\begin{enumerate}
+%			\item[] \textbf{Кодеры}:  
+%			$(P_t^{c},P_t^{r})=\Phi_{\theta}(\!\bX_{1:t}),\;
+%			(Q_t^{c},Q_t^{r})=\Psi_{\theta}(\!\bY_{1:t})$ — трансформеры с CA-блоками.  
+%			\item[] \textbf{Декодеры}:  
+%			$\widehat{\bX}_t=\Phi^{-1}_{\theta}(P_t^{r}),\;
+%			\widehat{\bY}_t=\Psi^{-1}_{\theta}(Q_t^{r})$.  
+%			\item[] \textbf{Функция потерь}:  
+%			\[
+%			\mathcal L \;=\; \lambda_{\text{rec}}
+%			\bigl[\!\| \bX-\widehat{\bX}\|_F + \| \bY-\widehat{\bY}\|_F \bigr]\;
+%			+\;\lambda_{\text{c}}\,
+%			\underbrace{ \bigl(1-\text{corr}(P^{c},Q^{c})\bigr) }_{\text{\scriptsize «CCM–loss»}}
+%			\]
+%			где \texttt{corr} вычисляется батчево.
+%		\end{enumerate}
 %	\end{varblock}
-	\small
-	\textbf{Цель CaSCA+CCM.}\;
-	Обучаемые параметры энкодеров/декодеров~$\,\varphi,\psi\,$
-	и весов~$A,B$ минимизируют
-	\[
-	\boxed{%
-		\mathcal L
-		=\;
-		\lambda_{\text{rec}}\,
-		\underbrace{%
-			\bigl(
-			\|{\bf X}_t-\widehat{\bf X}_t\|_F+
-			\|{\bf Y}_t-\widehat{\bf Y}_t\|_F
-			\bigr)
-		}_{\displaystyle \mathcal L_{\text{rec}}}
-		\;+\;
-		\lambda_{\rho}\,
-		\underbrace{%
-			\bigl(-\rho^{\text{CCM}}_{X\to Y}(A,B)\bigr)
-		}_{\text{causal\,score}}
-		\;+\;
-		\lambda_{\text{mono}}\,
-		P^{\text{mono}}
-		\;+\;
-		\lambda_{\text{gap}}\,
-		P^{\text{gap}} }
-	\]
-	
-	\vspace{0.6em}
-	\begin{enumerate}
-		\item \(\displaystyle \rho^{\text{CCM}}_{X\to Y}(A,B)
-		=\mathrm{corr}\!\Bigl(Y_t,\,
-		\widehat Y_t\,|\,M_{X,t}(A)\Bigr)\)
-		— «skill» перекрёстной реконструкции\\
-		(чем он выше, тем сильнее причинное влияние $\!X\!\to\!Y$).
-		
-		\item \(\displaystyle
-		P^{\text{mono}}
-		=\!
-		\sum_{i=2}^{|{\mathcal L}|}
-		\operatorname{softplus}\!\Bigl(
-		\rho(L_{i-1})-\rho(L_i)+\varepsilon
-		\Bigr)
-		\) — штраф за любое \emph{немонотонное} уменьшение
-		CCM-корреляции при увеличении объёма библиотеки
-		
-		\item \(\displaystyle
-		P^{\text{gap}}
-		=\operatorname{softplus}\!\Bigl(
-		\delta - \Delta z
-		\Bigr),\quad
-		\Delta z = z\!\bigl(\rho(L_{\max})\bigr) -
-		z\!\bigl(\rho(L_{\min})\bigr),
-		\;\;
-		z(p)=\tfrac12\ln\frac{1+p}{1-p}
-		\)\\[0.15em]
-		— штраф, если преобразованный
-		прирост корреляции между минимальной
-		и максимальной библиотеками
-		меньше заданного порога \(\delta\).
-	\end{enumerate}
-\end{frame}
+%\end{frame}
+%
+%
+%\begin{frame}{Расширение CaSCA на глубокие сети}
+%	\begin{rustheorem}[2024, Эквивалентность CA и CCA]
+%		Пусть $\,\mathrm{CA}_k(\bX,\bY)$ — одноголовая cross-attention без нелинейностей c $k$ ключами.  
+%		Если \,$\bX,\bY$ предварительно ортогонализованы, то  
+%		выходные представления \,$U=\mathrm{CA}_k(\bX,\bY),\;V=\mathrm{CA}_k(\bY,\bX)$  
+%		максимизируют выборочную корреляцию так же, как первые $k$ канонических пар CCA.
+%	\end{rustheorem}
+
+%	\vspace{0.5em}
+%	Cross-attention обучается поворачивать скрытое пространство так, чтобы каждая голова совпадала с каноническим направлением; сам механизм self-attention неявно реализует сдвиги $\bX_{t-\tau}$ $\!\!\rightarrow$ $\bX_{t}$.
+%\end{frame}
+%%------------------------------------------------------------
+%
+%%--------------------------------------------------
+%\begin{frame}{Регуляризатор Сугихары: вспоминаем метод}
+%	\begin{varblock}{Сходящийся перекрестный анализ}
+%			\textbf{Теневое вложение:}
+%		\[
+%		M_{X,t}
+%		= 
+%		\bigl(
+%		X_t,\,
+%		X_{t-\tau},\,
+%		\dots,\,
+%		X_{t-(E-1)\tau}
+%		\bigr)
+%		\;\in\;\mathbb{R}^E,
+%		\]
+%		где $E$ --- размерность вложения, $\tau$ --- временной лаг. 
+%		%Аналогично задаётся $M_{Y,t} = \bigl(Y_t,\,Y_{t-\tau},\,\dots\bigr).$
+%		
+%		\vspace{1em}
+%		\textbf{Реконструкция:}
+%		\[
+%		\widehat{Y}_t | M_{X, t}
+%		=
+%		\sum_{i=1}^{k}
+%		w_i\,
+%		Y_{n_i},
+%		\]
+%		здесь $n_i$ --- индексы ближайших соседей точки $M_{X,t}$ в пространстве $M_X$, а $w_i$ --- веса, зависящие от расстояния до $M_{X,t}$.
+%		
+%		\vspace{1em}
+%		\textbf{Критерий причинности:}
+%		\[
+%		\rho_{X\to Y}
+%		=
+%		\mathrm{corr}\!\Bigl( Y_t, \widehat{Y}_t | M_{X, t} \Bigr).
+%		\]
+%		Если при увеличении размера ``библиотеки'' (множества рассматриваемых соседей) $\rho_{X \to Y}$ \emph{сходится монотонно}, считается, что $\mathbf{X}(t)$ влияет на $\mathbf{Y}(t)$.
+%	\end{varblock}
+%\end{frame}
+%
+%
+%\begin{frame}{Регуляризатор Сугихары: статистические тесты сходимости}
+%	Проверяем, что $\rho_{X\to Y}(L)$ \;«устойчиво растёт» при увеличении длины библиотеки $L$
+%	\begin{itemize}
+%		\item[] \textbf{Шаг 1.} Формируем последовательность оценок
+%		\[
+%		\rho_{X\to Y}(L_0),\;
+%		\rho_{X\to Y}(L_1),\dots,
+%		\rho_{X\to Y}(L_{\max}), \quad
+%		L_0=E,\;L_{\max}=T .
+%		\]
+%		\item[] \textbf{Шаг 2.} \emph{Тест Кендалла $\tau$}  
+%		— проверяем наличие значимого монотонного тренда  
+%		$\rho_{X\to Y}(L_i)\nearrow$ при росте $L_i$.
+%		
+%		\[
+%		H_0:\;\tau=0
+%		\quad\Longrightarrow\quad
+%		p_{\tau} < \alpha \;\;\text{(тренд есть)}
+%		\]
+%		
+%		\item[] \textbf{Шаг 3.} \emph{Тест Фишера $\Delta\!Z$}  
+%		— оцениваем, отличается ли
+%		$\rho_{X\to Y}(L_{\max})$  
+%		от  $\rho_{X\to Y}(L_{0})$ статистически значимо:
+%		
+%		\[
+%		Z  \;=\; 
+%		\frac{\operatorname{atanh}\rho(L_{\max})-\operatorname{atanh}\rho(L_{0})}
+%		{\sqrt{\dfrac{1}{\,L_{\max}-3}+\dfrac{1}{\,L_{0}-3}}}, 
+%		\qquad
+%		p_{Z}<\alpha .
+%		\]
+%		
+%		\item[] \textbf{Решение.}  Считаем кросс-мап подтверждённым, 
+%		если одновременно \(p_{\tau}\) и \(p_{Z}\) меньше порога~\(\alpha\)
+%		(обычно \(\alpha=0.05\)).
+%	\end{itemize}
+%\end{frame}
+%
+%
+%\begin{frame}{Регуляризатор Сугихары: обучение с учётом динамики}
+%%	\begin{varblock}{Зачем нужен регуляризатор ССМ?}
+%%		\begin{itemize}
+%%			\item[] Стандартная корреляция фиксирует лишь <<статические>> связи.  
+%%			\item[] CCM проверяет \textbf{динамическую} причинность:  
+%%			насколько траектория $M_{X,t}$ предсказывает $Y_t$ при
+%%			увеличении размера библиотеки $L$.
+%%			\item[] Включаем $-\rho_{X\to Y}(L_{\max})$ в целевую функцию,  
+%%			чтобы модель \emph{конструктивно} усиливала истинную
+%%			направленную зависимость.
+%%		\end{itemize}
+%%	\end{varblock}
+%%
+%%% ---------- RIGHT COLUMN : алгоритм ----------
+%%	\begin{varblock}{Алгоритм обучения (псевдокод)}
+%%		\begin{algorithmic}[1]
+%%			\State \textbf{Input:} $\;X_t,\,Y_t;\,$ параметры сети
+%%			\For{epoch = 1 \textbf{to} $E$}
+%%			\State $P_t,\,Q_t \leftarrow$ encoders$(X_t,Y_t)$
+%%			\State $\hat X_t,\hat Y_t \leftarrow$ decoders$(P_t,Q_t)$
+%%			\State \textcolor{darkgreen}{$\rho \leftarrow$ CCM}\big($P_{t-\tau}^c,\,Q_t^c\big)$
+%%			\State $\mathcal L_{\text{rec}} \gets
+%%			||X-\hat X||_F + ||Y-\hat Y||_F$
+%%			\State $\mathcal L \gets
+%%			\lambda_{\text{rec}}\mathcal L_{\text{rec}}
+%%			-\lambda_{\text{ccm}}\rho$
+%%			\State back-propagate\;$(\mathcal L)$
+%%			\EndFor
+%%		\end{algorithmic}
+%%	\end{varblock}
+%	\small
+%	\textbf{Цель CaSCA+CCM.}\;
+%	Обучаемые параметры энкодеров/декодеров~$\,\varphi,\psi\,$
+%	и весов~$A,B$ минимизируют
+%	\[
+%	\boxed{%
+%		\mathcal L
+%		=\;
+%		\lambda_{\text{rec}}\,
+%		\underbrace{%
+%			\bigl(
+%			\|{\bf X}_t-\widehat{\bf X}_t\|_F+
+%			\|{\bf Y}_t-\widehat{\bf Y}_t\|_F
+%			\bigr)
+%		}_{\displaystyle \mathcal L_{\text{rec}}}
+%		\;+\;
+%		\lambda_{\rho}\,
+%		\underbrace{%
+%			\bigl(-\rho^{\text{CCM}}_{X\to Y}(A,B)\bigr)
+%		}_{\text{causal\,score}}
+%		\;+\;
+%		\lambda_{\text{mono}}\,
+%		P^{\text{mono}}
+%		\;+\;
+%		\lambda_{\text{gap}}\,
+%		P^{\text{gap}} }
+%	\]
+%	
+%	\vspace{0.6em}
+%	\begin{enumerate}
+%		\item \(\displaystyle \rho^{\text{CCM}}_{X\to Y}(A,B)
+%		=\mathrm{corr}\!\Bigl(Y_t,\,
+%		\widehat Y_t\,|\,M_{X,t}(A)\Bigr)\)
+%		— «skill» перекрёстной реконструкции\\
+%		(чем он выше, тем сильнее причинное влияние $\!X\!\to\!Y$).
+%		
+%		\item \(\displaystyle
+%		P^{\text{mono}}
+%		=\!
+%		\sum_{i=2}^{|{\mathcal L}|}
+%		\operatorname{softplus}\!\Bigl(
+%		\rho(L_{i-1})-\rho(L_i)+\varepsilon
+%		\Bigr)
+%		\) — штраф за любое \emph{немонотонное} уменьшение
+%		CCM-корреляции при увеличении объёма библиотеки
+%		
+%		\item \(\displaystyle
+%		P^{\text{gap}}
+%		=\operatorname{softplus}\!\Bigl(
+%		\delta - \Delta z
+%		\Bigr),\quad
+%		\Delta z = z\!\bigl(\rho(L_{\max})\bigr) -
+%		z\!\bigl(\rho(L_{\min})\bigr),
+%		\;\;
+%		z(p)=\tfrac12\ln\frac{1+p}{1-p}
+%		\)\\[0.15em]
+%		— штраф, если преобразованный
+%		прирост корреляции между минимальной
+%		и максимальной библиотеками
+%		меньше заданного порога \(\delta\).
+%	\end{enumerate}
+%\end{frame}
 
 %----------------------------------------------------------------------------------------------------------
-\begin{frame}{Вычислительный эксперимент на данных ЭЭГ - ИИМ}	
+\begin{frame}{Вычислительный эксперимент: описание данных}
 	\begin{multicols}{2}
 	
-		\begin{varblock}[6cm]{Данные}
-			У 25 участников были записаны показания ЭЭГ, ИИМ, МРТ во время игры в настольный теннис. С каждым участником было сыграно 4 сессии, длительность каждой из них составляет 7-10 минут.
+		\begin{varblock}[6cm]{Данные EEG-IMU}
+			У 25 участников были записаны показания EEG, IMU, MRT во время игры в настольный теннис. С каждым участником было сыграно 4 сессии, длительность каждой из них составляет 7-10 минут.
 		\end{varblock}
 	
 		\begin{figure}
 			\includegraphics[width=\linewidth]{tennis-viz.png}
 		\end{figure}
+	
+		\begin{varblock}[6cm]{Данные двух IMU устройств}
+			Показания акселерометра и гироскопа со смартфона и планшета, записанные во время 10 минутной ходьбы.
+		\end{varblock}
+	
+		\begin{figure}
+			\includegraphics[width=\linewidth]{two-imu-devices.png}
+		\end{figure}
 
 	\end{multicols}
 \end{frame}
 
+\begin{frame}{Вычислительный эксперимент: сравнение CaSCA в исходном и траекторном пространствах}
+	\begin{table}[]
+		\begin{tabular}{lr|c|c|}
+			\cline{3-4}
+			& \multicolumn{1}{l|}{} & \multicolumn{1}{l|}{CaSCA} & \multicolumn{1}{l|}{CaSCA traj.} \\ \hline
+			\multicolumn{1}{|l|}{kNN}           & Expl.var.ratio        & -3.4\%                     & -2.1\%                           \\ \hline
+			\multicolumn{1}{|l|}{}              & RMSE                  & -0.11                      & -0.08                            \\ \hline
+			\multicolumn{1}{|l|}{Linear}        & Expl.var.ratio        & -3.3\%                     & +0.3\%                           \\ \hline
+			\multicolumn{1}{|l|}{}              & RMSE                  & -0.07                      & 0.01                             \\ \hline
+			\multicolumn{1}{|l|}{Grad.Boosting} & Expl.var.ratio        & -0.7\%                     & -0.1\%                           \\ \hline
+			\multicolumn{1}{|l|}{}              & RMSE                  & -0.026                     & -0.006                           \\ \hline
+		\end{tabular}
+	\end{table}
+\end{frame}
+
 \begin{frame}{Выносится на защиту}
 	\begin{enumerate}
-		\item \textbf{Метод CaSCA.}\;
+		\item
 		Предложен причинный метод снижения размерности, 
 		выделяющий отдельное латентное подпространство для
 		причинных компонент и обеспечивающий точную реконструкцию сигналов.
 		
-		\item \textbf{Теоретические гарантии.}\;
+		\item
 		Доказано ортогональное разложение выборочной ковариации
 		и строгая разделимость вариации на «причинный» и «реконструктивный» блоки в ортогональном пространстве состояний.
 		
-		\item \textbf{Четыре расширения.}\;
+		\item
 		Разработаны модификации метода в траекторном, римановом и
-		глубоком обучающих пространствах, а также
+		глубоком обучающих пространствах, а такжee
 		регуляризатор CCM, вводящий динамическое ограничение Сугихары
 		через дифференцируемый штраф.
 		
-		\item \textbf{Выборка критериев оценки.}\;
+		\item
 		Сформулирован комплекс метрических показателей
-		(мультиколлинеарность, реконструкция, улучшение качества прогноза)  
+		(мультиколлинеарность, e, улучшение качества прогноза)  
 		для объективного сравнения методов причинного анализа.
-		
-		\item \textbf{Вычислительный эксперимент.}\;
+		e
+		\item
 		Проведены тесты на двух наборах данных
-		(два IMU-датчика и EEG-IMU).  
-		CaSCA и его глубинная версия показали стабильное превосходство
-		над PCA, CCA, PLS, LiNGAM и рядом современных CRL-подходов
-		в исходном и траекторном пространствах.
+		(два IMU-датчика и EEG-IMU.
 	\end{enumerate}
 \end{frame}
 
