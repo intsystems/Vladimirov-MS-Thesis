@@ -1133,17 +1133,46 @@
 	directly into end-to-end representation learning.
 	
 	\section{Computational experiment} \label{sec:experiments}
-	Note that since we can't receive a true causal graph, the task of evaluating causal inference method becomes more sophisticated.
-	One way to solve it is to compare the quality of one component's prediction based on causal parents.
-	Since we're working with table tennis dataset, I suggest to consider a task of paddle hit classification (succesful, neutral or failure) as a benchmark for causal discovery methods.
+	In this section, we evaluate how well \textbf{CaSCA} simplifies the forecasting and classification of real-world sensory signals compared to established methods for dimensionality reduction and causality discovery.
 	
-	Plan:
-	\begin{itemize}
-		\item Generate synthetic EEG dataset, consider causal discovery as a binary classification problem, compare F1 score
-		\item Check that extracted causal components improve the quality of the model, which predicts whether the hit was successful, neutral or failure.
-		\item Check that the more tennis skills the player has the stronger concentration/causal link between motor cortex and frontal lobe.
-	\end{itemize}
+	\subsection{Datasets}
 	
+	\begin{table}[h!]
+		\centering
+		\renewcommand{\arraystretch}{1.15}
+		\begin{tabular}{@{}lccc@{}}
+			\toprule
+			\textbf{Dataset} & \textbf{\# Subjects} & \textbf{Signals} & \textbf{Duration} \\
+			\midrule
+			\textbf{2-IMU} & 1 & 2 × 6-channel IMUs & 10 min \\
+			\textbf{EEG-IMU} & 25 & 119-channel EEG + 13-channel IMU & 4 sessions × 15 min \\
+			\bottomrule
+		\end{tabular}
+		\caption{Characteristics of the datasets used.}
+	\end{table}
+	
+	Both recordings are synchronized at 200 Hz and pre-cleaned of artifacts (slow drift, electrode discharges, dropouts).  
+	To illustrate the construction of trajectory and Riemannian spaces, we present sketch layouts for Figures A and B ("raw signal/delay cloud" and "covariance trajectory")—they will be replaced by final images after data preprocessing is completed.
+	
+	\subsection{Experiment Setup}
+	
+	For the "2-IMU" dataset, the task is to forecast the future motion of the device in the backpack using signals from the pocket.  
+	In the "EEG-IMU" case, the target variable is the strike quality label (success / neutral / error).  
+	Each dimensionality reduction method (PCA, CCA, Granger-PCA, PCMCI + Eigen-Maps, ICA + DirectLiNGAM, and CaSCA) is applied in the original, trajectory (delayed), and Riemannian (SPD-covariant) spaces.  
+	The resulting latent vectors are fed into one of three base models: linear/logistic regression, KNN regressor/classifier, and CatBoost Gradient Boosting.  
+	The parameters $d_c$ and $d_r$ are varied from the set ${1,2,3,4}$, and the maximum delay is set to $\tau_{\max} = 10$.
+	
+	\subsection{Metrics and Plots for 2-IMU}
+	
+	Figure 1 ("RMSE and $R^2$ vs $d_c, d_r$") shows that incorporating causal components ($d_c > 0$) consistently reduces prediction error.  
+	Figure 2 compares the performance of models trained in the original and trajectory spaces: all three metric groups (reconstruction, multicollinearity, predictive power) improve after switching to delays.  
+	Finally, Figure 3 illustrates the effect of lag optimization: models optimizing $\tau^\star$ show a substantial $R^2$ gain compared to $\tau = 0$.
+	
+	\subsection{Metrics and Plots for EEG-IMU}
+	
+	Figure A shows the dependence of F1-score on $(d_c, d_r)$; the optimum is reached at $d_c = 2, d_r = 6$.  
+	Figure B compares the original and Riemannian spaces: moving to SPD covariances nearly halves the Condition Number and improves classifier accuracy across the board.  
+	Figure C demonstrates that the trajectory space further increases the performance gap between CaSCA and baseline methods, especially when using gradient boosting.
 	
 	\section{Future Directions} \label{sec:future}
 	
