@@ -52,6 +52,8 @@
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
 \usepackage{stackrel}
+\usetikzlibrary{matrix,arrows.meta,quotes,positioning}
+\usetikzlibrary{calc}
 
 \usepackage{hyperref}
 \hypersetup{
@@ -120,6 +122,7 @@
 \newcommand{\bX}{\mathbf{X}}
 \newcommand{\bZ}{\mathbf{Z}}
 \newcommand{\bS}{\mathbf{S}}
+\newcommand{\bI}{\mathbf{I}}
 \newcommand{\bH}{\mathbf{H}}
 \newcommand{\bW}{\mathbf{W}}
 \newcommand{\bY}{\mathbf{Y}}
@@ -131,7 +134,10 @@
 \newcommand{\bC}{\mathbf{C}}
 \newcommand{\bE}{\mathbf{E}}
 \newcommand{\bF}{\mathbf{F}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bV}{\mathbf{V}}
 \newcommand{\bsigma}{\boldsymbol{\sigma}}
+\newcommand{\bSigma}{\boldsymbol{\Sigma}}
 \newcommand{\bomega}{\boldsymbol{\omega}}
 \newcommand{\btheta}{\boldsymbol{\theta}}
 \newcommand{\bgamma}{\boldsymbol{\gamma}}
@@ -174,7 +180,7 @@
 \newtheorem{Th}{Теорема}
 \newtheorem{Def}{Определение}
 \newenvironment{Proof} % имя окружения
-{\par\noindent{\bf Доказательство.}} % команды для \begin
+{\par\noindent{\bf Proof:}} % команды для \begin
 {\hfill$\scriptstyle\blacksquare$} % команды для \end
 \newtheorem{Assumption}{Предположение}
 \newtheorem{Corollary}{Следствие}
