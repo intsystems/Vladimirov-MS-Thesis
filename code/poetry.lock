@@ -3219,6 +3219,29 @@ files = [
 pandas = ">=1.2.0"
 
 [[package]]
+name = "pyriemann"
+version = "0.7"
+description = "Machine learning for multivariate data with Riemannian geometry"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pyriemann-0.7-py2.py3-none-any.whl", hash = "sha256:6ad9c00a583fdab9472f433eb54730d8f55852300fec834e00b32daa295c4089"},
+    {file = "pyriemann-0.7.tar.gz", hash = "sha256:f1889f3aec02c4148dec5458299ade2b4a0f28063312c00180a8dfeeea9d9b8e"},
+]
+
+[package.dependencies]
+joblib = "*"
+matplotlib = "*"
+numpy = "!=1.24.0"
+scikit-learn = ">=0.24"
+scipy = "*"
+
+[package.extras]
+docs = ["mne", "numpydoc", "pandas", "seaborn", "sphinx", "sphinx-bootstrap-theme", "sphinx-gallery"]
+tests = ["flake8", "pytest", "seaborn"]
+
+[[package]]
 name = "pyro-api"
 version = "0.1.2"
 description = "Generic API for dispatch to Pyro backends."
@@ -4627,4 +4650,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "f14320b6a0a39e8f8855ec9163ca89ea5339bd8764a154f1016e6c0121f37a80"
+content-hash = "f18b22dd72a9878797d6745263efb52227298a27d70c94e6b1e98a2ba6681fd6"
