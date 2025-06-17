@@ -63,7 +63,7 @@
 	pdfauthor={Vladimirov Eduard Anatolevich},
 	pdfkeywords={First keyword, Second keyword, More},
 	colorlinks=true,
-	linkcolor=black,        % внутренние ссылки
+	linkcolor=blue,        % внутренние ссылки
 	citecolor=green,        % на библиографию
 	filecolor=magenta,      % на файлы
 	urlcolor=blue           % на URL
@@ -186,6 +186,15 @@
 \newtheorem{Corollary}{Следствие}
 \newtheorem{problem}{Problem}
 
-\graphicspath{{../figures/}}
+% abstract styling
+\renewenvironment{abstract}
+{
+	\centerline
+	{\large \bfseries \scshape \abstractname}
+	\begin{quote}
+	}
+	{
+	\end{quote}
+}
 
-\renewcommand{\abstractname}{Аннотация}
+\graphicspath{{../figures/}}

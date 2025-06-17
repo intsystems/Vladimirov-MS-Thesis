@@ -11,29 +11,39 @@
 	\tableofcontents
 	\newpage
 	
-	\begin{center}
-		\Large{\textbf{Annotation}}
-	\end{center}
+%	\begin{abstract}
+%		Learning low–dimensional representations that preserve cause–and–effect structure is a key step toward interpretable modelling of high-dimensional dynamical data.
+%		This thesis introduces \textbf{CaSCA}, a linear auto-encoder that splits the latent space into a causal block, capturing delayed directed influence from one multivariate series to another, and a reconstructive block, keeping residual variance.  
+%		Extensions to trajectory embeddings, Riemannian covariance spaces, and a deep variant with a differentiable Convergent Cross Mapping loss broaden the framework.  
+%		Comprehensive experiments on two real-world datasets—dual accelerometer-gyroscope recordings and EEG–IMU traces of table-tennis sessions—show that CaSCA  
+%		(i) reduces multicollinearity,  
+%		(ii) reconstructs signals with negligible loss of explained variance, and  
+%		(iii) improves downstream prediction
+%		The method thus offers a compact, interpretable state-space where causal links are easier to detect and exploit.
+%		
+%		\bigskip
+%		\textbf{Keywords}: \emph{dimensionality reduction, causal representation learning, canonical correlation analysis, state space reconstruction, EEG, IMU, Riemannian geometry, convergent cross mapping}
+%	\end{abstract}
+
+\begin{abstract}
+	Изучение низкоразмерных представлений, сохраняющих причинно–следственную структуру, является ключевым шагом на пути к интерпретируемому моделированию многомерных динамических данных.
+	В тезисе представлен линейный автокодировщик \textbf{CaSCA}, который разбивает скрытое пространство на каузальный блок, фиксирующий отложенное направленное влияние от одного многомерного ряда к другому, и реконструктивный блок, сохраняющий остаточную дисперсию.  
+	Расширения для траекторных эмбеддингов, римановых ковариационных пространств и нейросетевого варианта с дифференцируемым методом сходящегося перекрёстного отображения расширяют фреймворк.  
+	Вычислительный эксперимент на двух реальных наборах данных ~-- записях с использованием двух акселерометров и гироскопа и ЭЭГ—ИИМ, полученных во время игры в настольный теннис, ~-- показывают, что CaSCA  
+	(i) уменьшает мультиколлинеарность,
+	(ii) восстанавливает сигналы с незначительной потерей объясняемой дисперсии и  
+	(iii) улучшает последующее прогнозирование.
+	Таким образом, метод предлагает компактное, поддающееся интерпретации пространство состояний, в котором причинно-следственные связи легче обнаруживать и использовать.
 	
-	\begin{abstract}
-		Learning low–dimensional representations that preserve cause–and–effect structure is a key step toward interpretable modelling of high-dimensional dynamical data.
-		This thesis introduces \textbf{CaSCA}, a linear auto-encoder that splits the latent space into a causal block, capturing delayed directed influence from one multivariate series to another, and a reconstructive block, keeping residual variance.  
-		Extensions to trajectory embeddings, Riemannian covariance spaces, and a deep variant with a differentiable Convergent Cross Mapping loss broaden the framework.  
-		Comprehensive experiments on two real-world datasets—dual accelerometer-gyroscope recordings and EEG–IMU traces of table-tennis sessions—show that CaSCA  
-		(i) reduces multicollinearity,  
-		(ii) reconstructs signals with negligible loss of explained variance, and  
-		(iii) improves downstream prediction
-		The method thus offers a compact, interpretable state-space where causal links are easier to detect and exploit.
-		
-		\bigskip
-		\textbf{Keywords}: \emph{dimensionality reduction, causal representation learning, canonical correlation analysis, state space reconstruction, EEG, IMU, Riemannian geometry, convergent cross mapping}
-	\end{abstract}
+	\bigskip
+	\textbf{Ключевые слова}: \emph{уменьшение размерности, изучение причинно-следственных связей, канонический корреляционный анализ, реконструкция пространства состояний, ЭЭГ, риманова геометрия, конвергентное перекрестное отображение}.
+\end{abstract}
 	
 	\newpage
 	
 	\section{Introduction}
 	
-	Identifying directed causal links among components of a dynamical system is central to many scientific domains, such as neuroscience, climate science, and economics. [TODO: add references].
+	Identifying directed causal links among components of a dynamical system is central to many scientific domains, such as neuroscience, climate science, and economics.
 	True understanding requires more than correlation: one needs a representation that makes causal mechanisms explicit and testable.  
 	Classic tools such as linear Granger causality \citep{Granger1969} and transfer entropy \citep{Schreiber2000} check whether past values of one series improve the prediction of another.  
 	Yet they operate in the raw measurement space, assume fixed linear effects, and struggle when high dimensionality, nonlinear coupling, or evolving dynamics hide the signal in noise.  
@@ -92,7 +102,7 @@
 	\[
 	\mathbf{x} = A \,\mathbf{s}, \qquad A \in \dR^{p\times p}.
 	\]
-	Higher–order statistics pin down $A^{-1}$ up to scaling and permutation; ICA algorithms exploit this fact to produce latent candidates for causal factors.  
+	Higher–order statistics pin down $A^{-1}$ up to scaling and permutation; ICA algorithms \citep{lee1998independent} exploit this fact to produce latent candidates for causal factors.  
 	LiNGAM \citep{Shimizu2006} embeds ICA inside a linear, acyclic Structural Equation Model (SEM), rewriting the mixture as  
 	\[
 	\mathbf{x}=B^{\top}\mathbf{x}+\boldsymbol\varepsilon,
@@ -107,7 +117,7 @@
 	
 	\subsubsection*{Supervised linear projections}
 	
-	Pure PCA maximises variance and risks projecting away low-variance but causally crucial directions.  
+	Pure PCA \citep{abdi2010principal} maximises variance and risks projecting away low-variance but causally crucial directions.  
 	Sufficient–dimension‐reduction (SDR) methods instead require that a projection $B^{\top}\mathbf{x}$ retain the conditional distribution of an outcome $Y$:
 	\[
 	Y\;\perp\!\!\!\perp\;\mathbf{x}\;\bigl|\;B^{\top}\mathbf{x}.
@@ -118,13 +128,13 @@
 	
 	\paragraph{Scope and limits.}
 	Linear SDR is fast, transparent, and easy to bias with domain knowledge (e.g.\ fix directions known to be causal).  
-	Because correlation does not imply causation, these projections must be interpreted with care: they preserve causal signal only if the analyst steers them toward it \citep{Nabi2022}.
+	Because correlation does not imply causation, these projections must be interpreted with care: they preserve causal signal only if the analyst steers them toward it.
 	
 	\subsubsection*{Temporal models}
 	
 	Time furnishes a partial ordering: causes precede effects.  
 	Vector-autoregressive LiNGAM extends the linear non-Gaussian framework to lagged interactions, recovering both instantaneous and delayed edges in a single estimation scheme.  
-	When linearity is doubtful or dimensionality large, constraint–based algorithms such as PCMCI/PCMCI$+$ \citep{Runge2019} test conditional independences across lags, pruning indirect and common-driver links while controlling false positives under autocorrelation.  
+	When linearity is doubtful or dimensionality large, constraint–based algorithms such as PCMCI/PCMCI $+$ \citep{Runge2019}, \citep{runge2020discovering} test conditional independences across lags, pruning indirect and common-driver links while controlling false positives under autocorrelation.  
 	These procedures effectively yield a low-dimensional set of lagged parents for each variable—a dynamic causal representation.
 	
 	\paragraph{Scope and limits.}
@@ -186,25 +196,27 @@
 	
 	\subsubsection*{Singular Spectrum Analysis (SSA)}
 	
-	\textbf{Singular Spectrum Analysis} is a method that combines delay embedding with linear decomposition techniques to extract modes of variability from a time series. It can be seen as a data-driven, nonparametric spectral decomposition method, closely related to \textit{principal component analysis} (PCA) on time-delay vectors. In SSA, one first forms the Hankel matrix of the time series using a chosen window length $L$. For a series $X = (x_1, \dots, x_N)$, the trajectory matrix is: 
+	\textbf{Singular Spectrum Analysis} is a method that combines delay embedding with linear decomposition techniques to extract modes of variability from a time series \citep{Broomhead1986,Vautard1992,Golyandina2001}. It can be seen as a data-driven, nonparametric spectral decomposition method, closely related to \textit{principal component analysis} (PCA) on time-delay vectors. In SSA, one first forms the Hankel matrix of the time series using a chosen window length $L$. For a series $X = (x_1, \dots, x_N)$, the trajectory matrix is: 
 	
 	$$ 
 	\mathbf{X} = [\,X_1 : X_2 : \cdots : X_K\,] \;\in \dR^{L \times K}, \quad \text{where } X_i = (x_i, x_{i+1}, \dots, x_{i+L-1})^T, 
 	$$ 
 	
 	and $K = N - L + 1$. 
-	Next, SSA performs a \textit{singular value decomposition} (SVD) of this trajectory matrix: $\mathbf{X} = \sum_{j=1}^L \sqrt{\lambda_j}\,U_j V_j^T$, equivalently diagonalizing the $L\times L$ lag-covariance matrix $\mathbf{S} = \mathbf{X}\mathbf{X}^T$ to obtain eigenvalues $\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_L$ and eigenvectors $U_j$. The eigenvectors $U_j$ provide an orthonormal basis of the $L$-dimensional embedding space, and projecting the trajectory matrix onto each $U_j$ yields the principal components (also called temporal EOFs in SSA literature). 
+	Next, SSA performs a \textit{singular value decomposition} (SVD) of this trajectory matrix: $\mathbf{X} = \sum_{j=1}^L \sqrt{\lambda_j}\,U_j V_j^T$.
+	Equivalently, it diagonalizes the $L\times L$ lag-covariance matrix $\mathbf{S} = \mathbf{X}\mathbf{X}^T$ to obtain eigenvalues $\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_L$ and eigenvectors $U_j$.
+	The eigenvectors $U_j$ provide an orthonormal basis of the $L$-dimensional embedding space, and projecting the trajectory matrix onto each $U_j$ yields the principal components (also called temporal EOFs in SSA literature). 
 	
 	The final steps involve \textbf{grouping} and \textbf{reconstruction}: one groups subsets of these components (e.g. those corresponding to a signal or trend of interest) and computes a reduced-rank approximation of $\mathbf{X}$. From this approximated trajectory matrix, the time series is reconstructed by averaging along the diagonals (each anti-diagonal corresponds to one time index).
 	By appropriate grouping, one can separate the original series into a sum of interpretable components: e.g. a slowly varying trend, oscillatory modes (often appearing as pairs of nearly equal $\lambda_j$ for sinusoidal components), and residual noise
 	
 	\subsubsection*{Manifold–Learning Embeddings}
 	
-	Classical delay embeddings and SSA use linear or fixed transformations. \textbf{Manifold learning} techniques, developed largely in the 2000s, enable nonlinear dimensionality reduction. 
+	Classical delay embeddings and SSA use linear or fixed transformations. \textbf{Manifold learning} techniques, developed largely in the 2000s, enable nonlinear dimensionality reduction. \citep{roweis2000nonlinear}
 	These methods attempt to discover a low-dimensional manifold on which the high-dimensional data lie, preserving intrinsic geometric structure.
 	The key idea is that if the system has an attractor of dimension $d$, the data (in some embedding space) essentially lie on an $d$-dimensional manifold $\mathcal{M}$, and algorithms can learn coordinates on $\mathcal{M}$ that flatten out the nonlinear twists of the attractor.
 	
-	Common manifold learning algorithms include Locally Linear Embedding (LLE), Isomap, t-SNE/UMAP, among others.
+	Common manifold learning algorithms include Locally Linear Embedding (LLE), Isomap, t-SNE, UMAP \citep{roweis2000nonlinear, balasubramanian2002isomap, van2008visualizing, mcinnes2018umap}.
 	These are unsupervised algorithms that take a set of data points in a high-$D$ space and produce coordinates in a lower $d$-dimensional space.
 	They typically construct a graph or neighborhood relations among the data points and then optimize some objective to preserve local distances or global geodesic structure.
 	
@@ -219,20 +231,21 @@
 	
 	\paragraph{SPD–covariance manifold.}  
 	Given a $d$-dimensional multivariate time series or a $d$-channel signal and an embedding dimension $D$, one can form $D$-lagged vectors as before: $s_e(t) = [s_1(t), ..., s_d(t),\; s_1(t+\tau),...,s_d(t+\tau),\;\dots,\;s_1(t+(D-1)\tau),...,s_d(t+(D-1)\tau)]^T \in \dR^{dD}$.
-	This is essentially a phase-space reconstruction applied to each channel.
+	This is essentially a phase-space reconstruction applied to each channel \citep{pennec2006intrinsic}.
 	From a window of such vectors, one can compute a \textbf{sample covariance matrix} $R = \frac{1}{N}\sum_{i=1}^N s_e(t_i) s_e(t_i)^T$, which will be a $dD \times dD$ SPD matrix (symmetric positive-definite).
 	This covariance encapsulates both the spatial correlations between channels and temporal correlations up to lag $(D-1)\tau$.
 	Each SPD matrix can be seen as a representation of the local state dynamics.
 	By comparing SPD matrices from different time windows, one can quantify similarity of dynamical states.
 	In practice, this approach has been very successful in scenarios like EEG where the true state is high-dimensional and noisy; the covariance provides a robust signature of the state that filters out high-frequency noise.
+	This idea—popularised in BCI by \citet{barachant2013classification}.
 	
 	\paragraph{Grassmannian subspaces.}  
 	Instead of the full covariance, one can represent the subspace spanned by certain vectors associated with the time series.
 	A prime example: in SSA or subspace system identification, we obtain an orthonormal basis of principal components (or an observability subspace) for the dynamics.
 	The column space spanned by, say, the first $r$ singular vectors $U_1,\dots,U_r$ of the trajectory matrix is an $r$-dimensional subspace of $\dR^L$.
-	This subspace itself can be treated as a point on a Grassmann manifold $\mathcal{G}(r, L)$ (the set of all $r$-dimensional subspaces in $\dR^L$).
+	This subspace itself can be treated as a point on a Grassmann manifold $\mathcal{G}(r, L)$, which is a set of all $r$-dimensional subspaces in $\dR^L$.
 	The Grassmann manifold has a natural Riemannian metric (derived from principal angles between subspaces), so one can measure distances between two subspaces.
-	This concept is used in subspace-based clustering of time series and in linear system identification: each linear dynamical system of order $r$ corresponds to an $r$-dimensional observability subspace.
+	This concept is used in subspace-based clustering of time series and in linear system identification: each linear dynamical system of order $r$ corresponds to an $r$-dimensional observability subspace \citep{hamm2008grassmann,turaga2011statistical}.
 	By embedding an unknown system’s data and estimating an $r$-dim subspace, one effectively reconstructs a linear state-space.
 	Clustering on Grassmann then groups systems with similar subspaces.
 	Recent reviews categorize various Grassmannian methods for multivariate time series clustering and modeling, highlighting that many algorithms differ by how they construct the subspace (e.g., via SVD of Hankel matrix, via autoregressive model subspace, or via frequency domain) but ultimately compare subspaces on $\mathcal{G}$.
@@ -805,10 +818,11 @@
 	
 	\paragraph{Step 2: \textsc{Xdawn} spatial filtering.}
 	Raw covariances live in a $N(N+1)/2$-dimensional space.
-	\textsc{Xdawn} learns a projection %
+	\textsc{Xdawn} \citep{rivet2009xdawn} learns a projection %
 	$\bW\in\R^{N\times n}$ ($n\!\ll\!N$) that maximises the
 	signal-to-noise ratio of task-related event-related potentials
-	\citep{rivet2009xdawn}.  Filtering each window gives
+	\citep{
+		}.  Filtering each window gives
 	\[
 	\tilde{\bSigma}_t
 	\;=\;
@@ -1151,28 +1165,124 @@
 		\caption{Characteristics of the datasets used.}
 	\end{table}
 	
-	Both recordings are synchronized at 200 Hz and pre-cleaned of artifacts (slow drift, electrode discharges, dropouts).  
-	To illustrate the construction of trajectory and Riemannian spaces, we present sketch layouts for Figures A and B ("raw signal/delay cloud" and "covariance trajectory")—they will be replaced by final images after data preprocessing is completed.
+	The EEG–IMU corpus contains $25$ subjects, each recorded during four
+	7–10-minute table-tennis sessions \citep{tennisdataset}.
+	Synchronous EEG (119 channels at 250 Hz) and body‐mounted IMU (13
+	channels) were band-pass–filtered, line-noise–removed.
+	The target variable is a ternary label that characterises each stroke
+	as \textbf{successful}, \textbf{neutral}, or \textbf{failure}
+	  
+	%EEG-IMU preprocessing: TODO \citep{tennisdataset}
+	%%2-IMU preprocessing: TODO
 	
 	\subsection{Experiment Setup}
 	
 	For the "2-IMU" dataset, the task is to forecast the future motion of the device in the backpack using signals from the pocket.  
 	In the "EEG-IMU" case, the target variable is the strike quality label (success / neutral / error).  
-	Each dimensionality reduction method (PCA, CCA, Granger-PCA, PCMCI + Eigen-Maps, ICA + DirectLiNGAM, and CaSCA) is applied in the original, trajectory (delayed), and Riemannian (SPD-covariant) spaces.  
-	The resulting latent vectors are fed into one of three base models: linear/logistic regression, KNN regressor/classifier, and CatBoost Gradient Boosting.  
-	The parameters $d_c$ and $d_r$ are varied from the set ${1,2,3,4}$, and the maximum delay is set to $\tau_{\max} = 10$.
+	We compare CaSCA model with PurePCA, which is a combination of two separate PCA blocks, and PureCCA, which is a single CCA model.
+	Each dimensionality reduction method is applied in the original, Riemannian and trajectory Riemannian space.
 	
-	\subsection{Metrics and Plots for 2-IMU}
+	The resulting latent vectors are fed into one of three base models: linear/logistic regression, KNN regressor/classifier, and Gradient Boosting regressor/classifier.
 	
-	Figure 1 ("RMSE and $R^2$ vs $d_c, d_r$") shows that incorporating causal components ($d_c > 0$) consistently reduces prediction error.  
-	Figure 2 compares the performance of models trained in the original and trajectory spaces: all three metric groups (reconstruction, multicollinearity, predictive power) improve after switching to delays.  
-	Finally, Figure 3 illustrates the effect of lag optimization: models optimizing $\tau^\star$ show a substantial $R^2$ gain compared to $\tau = 0$.
+	For each representation we varied causal and reconstructive dimensions.  
+	Latent features were fed to three base classifiers ~--- logistic regression with class weighting, $k$-nearest neighbours classifier, and CatBoost gradient boosting for the "EEG-IMU" case and the same family's regressors for "2-IMU" dataset ~--- using an 80 / 20 train-test split.
+	
+	% There's no certain labels, so if diff between two hits > 4 seconds or the last neutral hit before failure -- then it's successful. If any error (2/3) -- failure, 4 -- drop from the dataset, the rest hits are neutral
+		
+	There is a class imbalance: error hits -- 10\%, neutral hits -- 84\%, successful hits -- 6\%. So, we use F1 score with macro and weighted averaging for model's quality evaluation.
+	
+	For each hit moment we extract a one second of EEG-IMU recordings before the event. We take 238 EEG channels, which aren't corrupted for all participants, from both scalp electrodes and noise electrodes.
+	next, we subtract scalp electrodes from noise channels. Thus, we remove the effect of motion artifacts.
+	
+	For IMU signals, we take paddle accelerometer data and the absolute acceleration value (4 channels) and 8 channels ('LISCM', 'LSSCM', 'LSTrap', 'LITrap', 'RITrap', 'RISCM', 'RSSCM', 'RSTrap') from the neck electromyography electrodes. As a result, we get 12 channels.
 	
 	\subsection{Metrics and Plots for EEG-IMU}
 	
-	Figure A shows the dependence of F1-score on $(d_c, d_r)$; the optimum is reached at $d_c = 2, d_r = 6$.  
-	Figure B compares the original and Riemannian spaces: moving to SPD covariances nearly halves the Condition Number and improves classifier accuracy across the board.  
-	Figure C demonstrates that the trajectory space further increases the performance gap between CaSCA and baseline methods, especially when using gradient boosting.
+	\begin{figure}[bhtp]
+		\centering
+		\subfloat[]{\includegraphics[width=.48\textwidth]{baseline-vs-casca.pdf}\label{fig:baseline-vs-casca}}
+		\subfloat[]{\includegraphics[width=.48\textwidth]{casca-spaces-baseline.pdf}\label{fig:casca-spaces-baseline}}
+		\\
+		\subfloat[]{\includegraphics[width=.48\textwidth]{casca-spaces-by-models.pdf}\label{fig:casca-spaces-by-models}}
+		\subfloat[]{\includegraphics[width=.48\textwidth]{heatmap-delta-max_F1w-Riemannian-Original.pdf}\label{fig:heatmap-delta-max_F1w-Riemannian-Original}}
+		\caption{EEG–IMU classification results.  
+			(a) Baseline features vs.\ CaSCA embeddings.  
+			(b) CaSCA vs.\ naive label priors.  
+			(c) Mean $\pm$ sd macro-F$_1$ by classifier and observation space.  
+			(d) F$_1$ gain of Riemannian over raw space.}
+			\label{fig:eeg_imu_results}
+	\end{figure}
+	
+	\paragraph{Baseline versus CaSCA.}
+	Figure~\ref{fig:baseline-vs-casca} compares the best
+	macro-F$_1$ of models trained only with EEG signals or only with IMU signals or with both type of signlas (blue bars) against the
+	best score achieved with CaSCA embeddings (orange bars). Here we can see, that the prediction quality improves after applying CaSCA model 
+	
+	\paragraph{Which space is best?}
+	Figure~\ref{fig:casca-spaces-baseline} shows that CaSCA vastly
+	outperforms heuristic predictors (class priors or most-frequent
+	class).  
+	More importantly, CaSCA profits from appropriate geometry: in
+	Fig.~\ref{fig:casca-spaces-by-models} the Riemannian SPD space
+	consistently beats the raw domain and, for CatBoost, improves the mean
+	macro-F$_1$ by $0.08$ with half the variance
+	(see also the heat-map in
+	Fig.~\ref{fig:heatmap-delta-max_F1w-Riemannian-Original}).
+	
+	\paragraph{CaSCA versus PurePCA / PureCCA.}
+	Figure~\ref{fig:other_models} summarises how reconstruction fidelity, multicollinearity, and predictive accuracy respond to the choice of the causal dimension $d_c$ and the total hidden dimension $d_{\mathrm{hid}}=d_c+d_r$.  
+	As expected, the explained–variance ratio grows almost monotonically with $d_{\mathrm{hid}}$ because every additional axis lets the decoder capture more signal energy; however, if one keeps $d_{\mathrm{hid}}$ fixed and allocates an excessive share to the causal block, reconstruction quality drops, reflecting the fact that purely causal directions cannot reproduce variance that is idiosyncratic to each sensor.  
+	The variance–inflation factor shows the opposite trend: multicollinearity increases with larger $d_{\mathrm{hid}}$ since more latent axes are linearly related, and it grows especially fast when $d_c$ is large, confirming that the linear deflation\,+\,PCA back–end of CaSCA inflates cross-correlation when too many directions are forced into the causal span.  
+	Predictive performance (macro-\(F_1\)) is highest for \emph{moderate} values of both $d_c$ and $d_{\mathrm{hid}}$; small latent spaces miss part of the interaction structure, whereas very large ones suffer from the amplified VIF, so downstream classifiers lose statistical power.  Altogether these curves support the empirical guideline used in the following sections: choose $d_c\!\in\!\{1,2\}$ and keep $d_{\mathrm{hid}}$ well below the raw channel count.
+	
+	\begin{figure}[bhtp]
+		\centering
+		\subfloat{\includegraphics[width=0.9\linewidth]{other-models-multicollinearity.pdf}}\par
+		\subfloat{\includegraphics[width=0.9\linewidth]{other-models-reconstruction.pdf}}\par
+		\subfloat{\includegraphics[width=0.9\linewidth]{other-models-prediction-f1-weighted.pdf}}
+		\caption{Impact of latent dimensionality on (top) multicollinearity quality, (middle) reconstruction, and (bottom) weighted $F_1$ score.}
+		\label{fig:other_models}
+	\end{figure}
+
+	\paragraph{Effect of causal and reconstruction dimensions.}
+	\begin{figure}[bhtp]
+		\centering
+		\subfloat{\includegraphics[width=0.6\linewidth]{vif-–-trajectory-space}}\par
+		\subfloat{\includegraphics[width=0.6\linewidth]{expl-var-ratio-–-trajectory-space.pdf}}\par
+		\subfloat{\includegraphics[width=0.6\linewidth]{f1-macro-–-trajectory-space.pdf}}
+		\caption{Relationship of $d_c$ and $d_{hid}$ in terms of (a) VIF score, (b) explained variance ratio and (c) macro F1-score}
+		\label{fig:dc_and_dhid_relationship}
+	\end{figure}
+
+	Figure~\ref{fig:dc_and_dhid_relationship}
+	jointly reveals how the choice of latent dimensions governs model behaviour.  
+	First, the VIF heat-map (left panel) shows that multicollinearity increases almost linearly with $d_{\text{hid}}$.  
+	Large latent spaces therefore risk unstable downstream regressions; the safest region lies at moderate sizes ($d_{\text{hid}}\!\approx\!6$–$8$), where VIF remains acceptable.  
+	
+	Second, the explained–variance curve (center panel) rises monotonically with the total hidden dimension $d_{\text{hid}}=d_c+d_r$, confirming that a broader latent space captures progressively more signal.  
+	However, for any fixed $d_{\text{hid}}$ the curve bends downwards as the causal share $d_c$ grows: allocating too many dimensions to the causal block deprives the reconstructive block of capacity, reducing reconstruction fidelity.
+	
+	Finally, the macro-F1 surface (right panel) demonstrates a sweet-spot: predictive accuracy peaks for intermediate settings ($d_c=2$–$3$ and $d_{\text{hid}}=6$–$8$).  
+	Too few dimensions ($d_{\text{hid}}\le 4$) fail to encode the cross-modal interaction, while too many ($d_{\text{hid}}\ge 10$) inflate multicollinearity and hurt generalisation.  
+	Taken together, the graphics recommend \emph{moderate} latent sizes with a small causal share, balancing information retention, numerical stability, and predictive power across all embedding spaces examined.
+	
+	\paragraph{Take-aways.}
+	\begin{itemize}
+		\item Causal embeddings obtained with CaSCA improve classification even with small latent dimension;
+		\item Working in delay or SPD-covariance space produces cleaner causal
+		coordinates than the raw domain;
+		\item CaSCA combines the reconstruction strength of PCA with the
+		cross-view sensitivity of CCA, outperforming both when evaluated on
+		real-world EEG–IMU data;
+		\item Multicollinearity, measured by the maximum VIF, rises almost linearly with hidden space dimension;
+		\item The highest F1-scores are achieved at intermediate latent sizes: models with too few dimensions miss cross-modal interactions, whereas overly large latents inflate VIF and degrade generalisation;
+	\end{itemize}
+	
+%	\subsection{Metrics and Plots for 2-IMU}
+%	
+%	Figure 1 ("RMSE and $R^2$ vs $d_c, d_r$") shows that incorporating causal components ($d_c > 0$) consistently reduces prediction error.  
+%	Figure 2 compares the performance of models trained in the original and trajectory spaces: all three metric groups (reconstruction, multicollinearity, predictive power) improve after switching to delays.  
+%	Finally, Figure 3 illustrates the effect of lag optimization: models optimizing $\tau^\star$ show a substantial $R^2$ gain compared to $\tau = 0$.
 	
 	\section{Future Directions} \label{sec:future}
 	
